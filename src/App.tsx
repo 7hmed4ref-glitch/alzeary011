@@ -7,6 +7,7 @@ import LiveStream from './components/LiveStream';
 import Complaints from './components/Complaints';
 import Login from './components/Login';
 import Register from './components/Register';
+import ForgotPassword from './components/ForgotPassword';
 import AdminDashboard from './components/AdminDashboard';
 import NotificationToast from './components/NotificationToast';
 import SplashScreen from './components/SplashScreen';
@@ -17,7 +18,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('lessons');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [authPage, setAuthPage] = useState<'login' | 'register'>('login');
+  const [authPage, setAuthPage] = useState<'login' | 'register' | 'forgot-password'>('login');
   const [showSplash, setShowSplash] = useState(true);
 
   // تحميل المستخدم من localStorage
@@ -49,7 +50,10 @@ function App() {
     if (authPage === 'register') {
       return <Register onRegister={handleLogin} onSwitchToLogin={() => setAuthPage('login')} />;
     }
-    return <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthPage('register')} />;
+    if (authPage === 'forgot-password') {
+      return <ForgotPassword onBackToLogin={() => setAuthPage('login')} />;
+    }
+    return <Login onLogin={handleLogin} onSwitchToRegister={() => setAuthPage('register')} onForgotPassword={() => setAuthPage('forgot-password')} />;
   }
 
   // إذا كان المستخدم مدير، عرض لوحة التحكم

@@ -7,9 +7,10 @@ import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, GraduationCap, Shield } from 
 interface LoginProps {
   onLogin: (user: User) => void;
   onSwitchToRegister: () => void;
+  onForgotPassword: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -128,6 +129,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
                 {error}
               </div>
             )}
+
+            {/* Forgot Password Link */}
+            <div className="text-left">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                هل نسيت كلمة المرور؟
+              </button>
+            </div>
 
             {/* Submit Button */}
             <button
