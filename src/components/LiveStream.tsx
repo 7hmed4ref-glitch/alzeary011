@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LiveSession } from '../types';
 import { liveSessions as initialSessions } from '../data';
 import {
@@ -11,6 +11,9 @@ import {
   MessageSquare,
   Bell,
   Circle,
+  Mic,
+  MicOff,
+  VideoOff,
 } from 'lucide-react';
 
 const LiveStream: React.FC = () => {
@@ -22,6 +25,15 @@ const LiveStream: React.FC = () => {
     return initialSessions;
   });
 
+  const [currentLiveSession, setCurrentLiveSession] = useState<LiveSession | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   // Sync with admin changes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,11 +41,129 @@ const LiveStream: React.FC = () => {
       if (stored) {
         const adminSessions = JSON.parse(stored);
         setSessions(adminSessions);
+        
+        // Check if there's an active live session
+        const activeSession = adminSessions.find((s: LiveSession) => s.isLive);
+        if (activeSession && !currentLiveSession) {
+          setCurrentLiveSession(activeSession);
+        } else if (!activeSession && currentLiveSession) {
+          setCurrentLiveSession(null);
+          disconnectFromStream();
+        }
       }
     }, 2000);
     return () => clearInterval(interval);
+  }, [currentLiveSession]);
+
+  // Connect to live stream when session is active
+  useEffect(() => {
+    if (currentLiveSession && !isConnected) {
+      connectToStream();
+    }
+  }, [currentLiveSession]);
+
+  const connectToStream = async () => {
+    try {
+      // Create BroadcastChannel for signaling
+      channelRef.current = new BroadcastChannel('live-stream-channel');
+      
+      // Create peer connection
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ]
+      };
+      
+      peerConnectionRef.current = new RTCPeerConnection(config);
+      
+      // Handle incoming tracks
+      peerConnectionRef.current.ontrack = (event) => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = event.streams[0];
+        }
+      };
+      
+      // Listen for signaling messages
+      channelRef.current.onmessage = async (event) => {
+        const { type, data } = event.data;
+        
+        if (type === 'offer' && peerConnectionRef.current) {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data));
+          const answer = await peerConnectionRef.current.createAnswer();
+          await peerConnectionRef.current.setLocalDescription(answer);
+          
+          channelRef.current?.postMessage({
+            type: 'answer',
+            data: peerConnectionRef.current.localDescription
+          });
+        } else if (type === 'ice-candidate' && peerConnectionRef.current) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data));
+        }
+      };
+      
+      // Handle ICE candidates
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          channelRef.current?.postMessage({
+            type: 'ice-candidate',
+            data: event.candidate
+          });
+        }
+      };
+      
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error connecting to stream:', error);
+    }
+  };
+
+  const disconnectFromStream = () => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    if (channelRef.current) {
+      channelRef.current.close();
+      channelRef.current = null;
+    }
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsConnected(false);
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const audioTracks = stream.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const videoTracks = stream.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoOff(!isVideoOff);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      disconnectFromStream();
+    };
   }, []);
-  const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
   const [chatMessages, setChatMessages] = useState([
     { id: 1, user: 'أحمد', message: 'مرحباً، هل يمكن إعادة الشرح؟', time: '10:05' },
     { id: 2, user: 'المعلم', message: 'بالتأكيد، سأعيد شرح النقطة الأخيرة', time: '10:06' },
@@ -60,28 +190,40 @@ const LiveStream: React.FC = () => {
   };
 
   // Active Live Session View
-  if (activeSession) {
+  if (currentLiveSession) {
     return (
       <div className="min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video Area */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              {/* Live Video Placeholder */}
-              <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 aspect-video flex items-center justify-center">
-                <div className="text-center">
-                  <div className="relative inline-block">
-                    <Video size={64} className="text-white/30" />
-                    <div className="absolute -top-1 -right-1">
-                      <span className="flex h-4 w-4">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
-                      </span>
+              {/* Live Video */}
+              <div className="relative bg-black aspect-video">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Loading State */}
+                {!isConnected && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="relative inline-block">
+                        <Video size={64} className="text-white/30" />
+                        <div className="absolute -top-1 -right-1">
+                          <span className="flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-white/60 mt-4 text-sm">جاري الاتصال بالبث...</p>
+                      <p className="text-white/40 text-xs mt-1">{currentLiveSession.teacher}</p>
                     </div>
                   </div>
-                  <p className="text-white/60 mt-4 text-sm">البث المباشر جاري الآن</p>
-                  <p className="text-white/40 text-xs mt-1">{activeSession.teacher}</p>
-                </div>
+                )}
 
                 {/* Live Badge */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
@@ -91,23 +233,54 @@ const LiveStream: React.FC = () => {
                   </span>
                   <span className="bg-black/50 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1.5">
                     <Users size={12} />
-                    {activeSession.viewers} مشاهد
+                    {currentLiveSession.viewers} مشاهد
                   </span>
                 </div>
+
+                {/* Controls */}
+                {isConnected && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+                    <button
+                      onClick={toggleMute}
+                      className={`p-2 rounded-full ${isMuted ? 'bg-red-500' : 'bg-black/50'} text-white hover:opacity-80 transition`}
+                    >
+                      {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+                    <button
+                      onClick={toggleVideo}
+                      className={`p-2 rounded-full ${isVideoOff ? 'bg-red-500' : 'bg-black/50'} text-white hover:opacity-80 transition`}
+                    >
+                      {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Session Info */}
               <div className="p-5">
-                <h3 className="font-bold text-lg text-gray-800">{activeSession.title}</h3>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Users size={14} />
-                    {activeSession.teacher}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Radio size={14} />
-                    {activeSession.subject}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-800">{currentLiveSession.title}</h3>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Users size={14} />
+                        {currentLiveSession.teacher}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Radio size={14} />
+                        {currentLiveSession.subject}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      disconnectFromStream();
+                      setCurrentLiveSession(null);
+                    }}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
+                  >
+                    العودة للقائمة
+                  </button>
                 </div>
               </div>
             </div>
@@ -199,8 +372,7 @@ const LiveStream: React.FC = () => {
             {liveSessions.map((session) => (
               <div
                 key={session.id}
-                className="bg-white rounded-2xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition-all cursor-pointer"
-                onClick={() => setActiveSession(session)}
+                className="bg-white rounded-2xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition-all"
               >
                 <div className="relative bg-gradient-to-br from-red-500 to-pink-600 h-32 flex items-center justify-center">
                   <Video size={40} className="text-white/50" />
@@ -226,7 +398,9 @@ const LiveStream: React.FC = () => {
                       {session.subject}
                     </span>
                   </div>
-                  <button className="mt-3 w-full bg-red-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+                  <button 
+                    onClick={() => setCurrentLiveSession(session)}
+                    className="mt-3 w-full bg-red-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
                     <Play size={14} />
                     انضم الآن
                   </button>

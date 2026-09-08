@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Page, Lesson, Exam, QuizQuestion, LiveSession } from '../types';
 import {
   Users,
@@ -27,6 +27,10 @@ import {
   Play,
   VideoIcon,
   HelpCircle,
+  Mic,
+  MicOff,
+  VideoOff,
+  Circle,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -113,6 +117,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     isLive: false,
   });
 
+  // Live streaming states
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastingSession, setBroadcastingSession] = useState<LiveSession | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const adminVideoRef = useRef<HTMLVideoElement>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   // Save to localStorage whenever data changes
   useEffect(() => {
     localStorage.setItem('admin_lessons', JSON.stringify(lessons));
@@ -125,6 +139,142 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   useEffect(() => {
     localStorage.setItem('admin_live_sessions', JSON.stringify(liveSessions));
   }, [liveSessions]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopBroadcast();
+    };
+  }, []);
+
+  // Live streaming handlers
+  const startBroadcast = async (session: LiveSession) => {
+    try {
+      // Get user media (camera and microphone)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      
+      localStreamRef.current = stream;
+      
+      // Show local video preview
+      if (adminVideoRef.current) {
+        adminVideoRef.current.srcObject = stream;
+      }
+      
+      // Create BroadcastChannel for signaling
+      channelRef.current = new BroadcastChannel('live-stream-channel');
+      
+      // Create peer connection
+      const config = {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ]
+      };
+      
+      peerConnectionRef.current = new RTCPeerConnection(config);
+      
+      // Add local tracks to peer connection
+      stream.getTracks().forEach(track => {
+        peerConnectionRef.current?.addTrack(track, stream);
+      });
+      
+      // Handle ICE candidates
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          channelRef.current?.postMessage({
+            type: 'ice-candidate',
+            data: event.candidate
+          });
+        }
+      };
+      
+      // Listen for signaling messages
+      channelRef.current.onmessage = async (event) => {
+        const { type, data } = event.data;
+        
+        if (type === 'answer' && peerConnectionRef.current) {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data));
+        } else if (type === 'ice-candidate' && peerConnectionRef.current) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data));
+        }
+      };
+      
+      // Create and send offer
+      const offer = await peerConnectionRef.current.createOffer();
+      await peerConnectionRef.current.setLocalDescription(offer);
+      
+      channelRef.current.postMessage({
+        type: 'offer',
+        data: peerConnectionRef.current.localDescription
+      });
+      
+      // Update session status
+      setBroadcastingSession(session);
+      setIsBroadcasting(true);
+      
+      // Update live session in list
+      setLiveSessions(liveSessions.map(s => 
+        s.id === session.id ? { ...s, isLive: true } : s
+      ));
+      
+    } catch (error) {
+      console.error('Error starting broadcast:', error);
+      alert('فشل في بدء البث. تأكد من السماح بالوصول إلى الكاميرا والميكروفون.');
+    }
+  };
+
+  const stopBroadcast = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
+    if (channelRef.current) {
+      channelRef.current.close();
+      channelRef.current = null;
+    }
+    
+    if (adminVideoRef.current) {
+      adminVideoRef.current.srcObject = null;
+    }
+    
+    if (broadcastingSession) {
+      setLiveSessions(liveSessions.map(s => 
+        s.id === broadcastingSession.id ? { ...s, isLive: false } : s
+      ));
+    }
+    
+    setIsBroadcasting(false);
+    setBroadcastingSession(null);
+  };
+
+  const toggleMute = () => {
+    if (localStreamRef.current) {
+      const audioTracks = localStreamRef.current.getAudioTracks();
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStreamRef.current) {
+      const videoTracks = localStreamRef.current.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoOff(!isVideoOff);
+    }
+  };
 
   const stats = {
     totalStudents: students.length,
@@ -378,9 +528,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     }
   };
 
-  const toggleLiveStatus = (id: number) => {
-    setLiveSessions(liveSessions.map(s => s.id === id ? { ...s, isLive: !s.isLive } : s));
-  };
+
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -663,6 +811,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         </button>
       </div>
 
+      {/* Broadcasting Interface */}
+      {isBroadcasting && broadcastingSession && (
+        <div className="bg-white rounded-2xl shadow-lg border-2 border-red-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-red-500 to-pink-600 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full text-sm font-bold">
+                  <Circle size={8} fill="white" />
+                  بث مباشر
+                </span>
+                <h4 className="font-bold">{broadcastingSession.title}</h4>
+              </div>
+              <button
+                onClick={stopBroadcast}
+                className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition"
+              >
+                إنهاء البث
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-4">
+            <div className="relative bg-black rounded-xl overflow-hidden aspect-video mb-4">
+              <video
+                ref={adminVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Controls Overlay */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+                <button
+                  onClick={toggleMute}
+                  className={`p-3 rounded-full ${isMuted ? 'bg-red-500' : 'bg-black/50'} text-white hover:opacity-80 transition`}
+                  title={isMuted ? 'إلغاء كتم الصوت' : 'كتم الصوت'}
+                >
+                  {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                </button>
+                <button
+                  onClick={toggleVideo}
+                  className={`p-3 rounded-full ${isVideoOff ? 'bg-red-500' : 'bg-black/50'} text-white hover:opacity-80 transition`}
+                  title={isVideoOff ? 'تشغيل الكاميرا' : 'إيقاف الكاميرا'}
+                >
+                  {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+                </button>
+              </div>
+
+              {/* Live Badge */}
+              <div className="absolute top-4 right-4">
+                <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+                  <Circle size={8} fill="white" />
+                  LIVE
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+              <p className="text-sm text-green-700">
+                ✓ البث نشط الآن - يمكن للطلاب المشاهدة في صفحة البث المباشر
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {liveSessions.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
           <Radio className="mx-auto text-gray-300 mb-4" size={48} />
@@ -672,7 +887,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {liveSessions.map((session) => (
-            <div key={session.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
+            <div key={session.id} className={`bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition ${
+              session.isLive ? 'border-red-200' : 'border-gray-100'
+            }`}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h4 className="font-bold text-gray-800">{session.title}</h4>
@@ -694,7 +911,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => toggleLiveStatus(session.id)}
+                  onClick={() => {
+                    if (session.isLive) {
+                      stopBroadcast();
+                    } else {
+                      startBroadcast(session);
+                    }
+                  }}
                   className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg transition text-sm font-medium ${
                     session.isLive ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-green-50 text-green-700 hover:bg-green-100'
                   }`}
