@@ -26,6 +26,7 @@ import {
   Save,
   Play,
   VideoIcon,
+  HelpCircle,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -91,6 +92,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     pdfUrl: '',
     pdfName: '',
   });
+  const [lessonQuiz, setLessonQuiz] = useState<QuizQuestion[]>([]);
 
   // Exam form state
   const [examForm, setExamForm] = useState({
@@ -140,6 +142,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       return;
     }
 
+    if (lessonQuiz.length === 0) {
+      alert('يرجى إضافة سؤال واحد على الأقل للاختبار');
+      return;
+    }
+
+    // Validate quiz questions
+    for (let i = 0; i < lessonQuiz.length; i++) {
+      const q = lessonQuiz[i];
+      if (!q.question.trim()) {
+        alert(`يرجى كتابة نص السؤال ${i + 1}`);
+        return;
+      }
+      for (let j = 0; j < q.options.length; j++) {
+        if (!q.options[j].trim()) {
+          alert(`يرجى ملء جميع الخيارات في السؤال ${i + 1}`);
+          return;
+        }
+      }
+    }
+
     if (editingLesson) {
       setLessons(lessons.map(l => l.id === editingLesson.id ? {
         ...l,
@@ -149,6 +171,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         videoUrl: lessonForm.videoUrl,
         pdfUrl: lessonForm.pdfUrl,
         pdfName: lessonForm.pdfName,
+        quiz: lessonQuiz,
       } : l));
     } else {
       const newLesson: Lesson = {
@@ -163,11 +186,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         isCompleted: false,
         isVideoWatched: false,
         isQuizPassed: false,
-        quiz: [
-          { id: 1, question: 'سؤال تجريبي 1؟', options: ['خيار 1', 'خيار 2', 'خيار 3', 'خيار 4'], correctAnswer: 0 },
-          { id: 2, question: 'سؤال تجريبي 2؟', options: ['خيار 1', 'خيار 2', 'خيار 3', 'خيار 4'], correctAnswer: 1 },
-          { id: 3, question: 'سؤال تجريبي 3؟', options: ['خيار 1', 'خيار 2', 'خيار 3', 'خيار 4'], correctAnswer: 2 },
-        ],
+        quiz: lessonQuiz,
       };
       setLessons([...lessons, newLesson]);
     }
@@ -175,6 +194,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     setShowLessonModal(false);
     setEditingLesson(null);
     setLessonForm({ title: '', description: '', duration: '', videoUrl: '', pdfUrl: '', pdfName: '' });
+    setLessonQuiz([]);
   };
 
   const handleEditLesson = (lesson: Lesson) => {
@@ -187,6 +207,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       pdfUrl: lesson.pdfUrl || '',
       pdfName: lesson.pdfName || '',
     });
+    setLessonQuiz(lesson.quiz || []);
     setShowLessonModal(true);
   };
 
@@ -221,6 +242,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
   const handleRemovePdf = () => {
     setLessonForm({ ...lessonForm, pdfUrl: '', pdfName: '' });
+  };
+
+  // Lesson Quiz handlers
+  const addLessonQuizQuestion = () => {
+    setLessonQuiz([...lessonQuiz, {
+      id: Date.now(),
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0,
+    }]);
+  };
+
+  const removeLessonQuizQuestion = (index: number) => {
+    setLessonQuiz(lessonQuiz.filter((_, i) => i !== index));
+  };
+
+  const updateLessonQuizQuestion = (index: number, field: string, value: any) => {
+    const updated = [...lessonQuiz];
+    if (field === 'question') {
+      updated[index] = { ...updated[index], question: value };
+    } else if (field === 'correctAnswer') {
+      updated[index] = { ...updated[index], correctAnswer: value };
+    }
+    setLessonQuiz(updated);
+  };
+
+  const updateLessonQuizOption = (qIndex: number, optIndex: number, value: string) => {
+    const updated = [...lessonQuiz];
+    const newOptions = [...updated[qIndex].options];
+    newOptions[optIndex] = value;
+    updated[qIndex] = { ...updated[qIndex], options: newOptions };
+    setLessonQuiz(updated);
   };
 
   // Exam handlers
@@ -479,7 +532,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-gray-800">إدارة الحصص الدراسية</h3>
         <button
-          onClick={() => { setEditingLesson(null); setLessonForm({ title: '', description: '', duration: '', videoUrl: '', pdfUrl: '', pdfName: '' }); setShowLessonModal(true); }}
+          onClick={() => { setEditingLesson(null); setLessonForm({ title: '', description: '', duration: '', videoUrl: '', pdfUrl: '', pdfName: '' }); setLessonQuiz([]); setShowLessonModal(true); }}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-indigo-700 transition shadow-md"
         >
           <Plus className="w-4 h-4" />
@@ -509,6 +562,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                   <Clock className="w-4 h-4" />
                   <span>{lesson.duration}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-indigo-600 mb-2 bg-indigo-50 px-3 py-2 rounded-lg">
+                  <HelpCircle className="w-4 h-4" />
+                  <span>{lesson.quiz?.length || 0} أسئلة اختبار</span>
                 </div>
                 {lesson.pdfUrl && (
                   <div className="flex items-center gap-2 text-sm text-green-600 mb-3 bg-green-50 px-3 py-2 rounded-lg">
@@ -799,6 +856,78 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                       <p className="text-sm text-gray-600">اضغط هنا لرفع ملف PDF</p>
                       <p className="text-xs text-gray-400 mt-1">سيظهر للطلاب أسفل الفيديو</p>
                     </label>
+                  </div>
+                )}
+              </div>
+
+              {/* Lesson Quiz Section */}
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="font-bold text-gray-800">اختبار الحصة (كويز)</h4>
+                    <p className="text-xs text-gray-500 mt-1">أضف أسئلة اختيار من متعدد مع التصحيح التلقائي</p>
+                  </div>
+                  <button onClick={addLessonQuizQuestion} className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-sm font-medium">
+                    <Plus className="w-4 h-4" />
+                    إضافة سؤال
+                  </button>
+                </div>
+
+                {lessonQuiz.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <HelpCircle className="mx-auto text-gray-300 mb-2" size={32} />
+                    <p className="text-gray-500 text-sm">لم تتم إضافة أسئلة بعد</p>
+                    <p className="text-gray-400 text-xs mt-1">يجب إضافة سؤال واحد على الأقل</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {lessonQuiz.map((q, idx) => (
+                      <div key={idx} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-indigo-600">السؤال {idx + 1}</span>
+                          <button onClick={() => removeLessonQuizQuestion(idx)} className="p-1 hover:bg-red-50 rounded">
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={q.question}
+                          onChange={(e) => updateLessonQuizQuestion(idx, 'question', e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-3 focus:ring-2 focus:ring-indigo-500"
+                          placeholder="نص السؤال"
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {q.options.map((opt, optIdx) => (
+                            <label key={optIdx} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition ${
+                              q.correctAnswer === optIdx
+                                ? 'border-green-300 bg-green-50'
+                                : 'border-gray-200 bg-white hover:border-indigo-200'
+                            }`}>
+                              <input
+                                type="radio"
+                                name={`lesson-q-${idx}-correct`}
+                                checked={q.correctAnswer === optIdx}
+                                onChange={() => updateLessonQuizQuestion(idx, 'correctAnswer', optIdx)}
+                                className="accent-green-600"
+                              />
+                              <input
+                                type="text"
+                                value={opt}
+                                onChange={(e) => updateLessonQuizOption(idx, optIdx, e.target.value)}
+                                className="flex-1 border-none bg-transparent focus:outline-none text-sm"
+                                placeholder={`الخيار ${optIdx + 1}`}
+                              />
+                              {q.correctAnswer === optIdx && (
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          💡 اختر الإجابة الصحيحة بالنقر على الدائرة بجانب الخيار
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
