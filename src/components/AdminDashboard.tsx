@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Page, Lesson, Exam, QuizQuestion, LiveSession } from '../types';
 import { db } from '../services/database';
+import { notificationService } from '../services/notificationService';
 import {
   Users,
   BookOpen,
@@ -34,6 +35,8 @@ import {
   Circle,
   Mail,
   Phone,
+  XCircle,
+  CheckCircle,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -50,7 +53,7 @@ interface StudentProgress {
   completedLessons: number;
   totalLessons: number;
   examScore: number;
-  status: 'active' | 'inactive';
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
@@ -81,14 +84,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   useEffect(() => {
     const loadStudents = () => {
       const users = db.getUsers();
-      const studentUsers = users.filter(u => u.role === 'student');
+      const studentUsers = users.filter((u: any) => u.role === 'student');
       
       // Get lessons to calculate progress
       const allLessons = db.getLessons();
       const totalLessons = allLessons.length;
       
       // Map students with their progress
-      const studentsWithProgress: StudentProgress[] = studentUsers.map(student => {
+      const studentsWithProgress: StudentProgress[] = studentUsers.map((student: any) => {
         // Get student's progress from localStorage
         const progressKey = `student_progress_${student.id}`;
         const progress = JSON.parse(localStorage.getItem(progressKey) || '{}');
@@ -102,7 +105,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
           completedLessons: progress.completedLessons || 0,
           totalLessons: totalLessons,
           examScore: progress.examScore || 0,
-          status: 'active' as const,
+          status: student.status || 'pending',
         };
       });
       
@@ -658,6 +661,64 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     student.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const pendingStudents = students.filter(s => s.status === 'pending');
+  const approvedStudents = students.filter(s => s.status === 'approved');
+  const rejectedStudents = students.filter(s => s.status === 'rejected');
+
+  const handleApproveStudent = (studentId: number) => {
+    db.updateUserStatus(studentId, 'approved');
+    notificationService.success('تم الموافقة على الطالب', 'يمكن للطالب الآن تسجيل الدخول');
+    // Refresh students list
+    const users = db.getUsers();
+    const studentUsers = users.filter((u: any) => u.role === 'student');
+    const allLessons = db.getLessons();
+    const totalLessons = allLessons.length;
+    const studentsWithProgress: StudentProgress[] = studentUsers.map((student: any) => {
+      const progressKey = `student_progress_${student.id}`;
+      const progress = JSON.parse(localStorage.getItem(progressKey) || '{}');
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone || 'غير محدد',
+        joinDate: student.joinDate,
+        completedLessons: progress.completedLessons || 0,
+        totalLessons: totalLessons,
+        examScore: progress.examScore || 0,
+        status: student.status || 'pending',
+      };
+    });
+    setStudents(studentsWithProgress);
+  };
+
+  const handleRejectStudent = (studentId: number) => {
+    if (confirm('هل أنت متأكد من رفض هذا الطالب؟')) {
+      db.updateUserStatus(studentId, 'rejected');
+      notificationService.warning('تم رفض الطالب', 'لن يتمكن الطالب من تسجيل الدخول');
+      // Refresh students list
+      const users = db.getUsers();
+      const studentUsers = users.filter((u: any) => u.role === 'student');
+      const allLessons = db.getLessons();
+      const totalLessons = allLessons.length;
+      const studentsWithProgress: StudentProgress[] = studentUsers.map((student: any) => {
+        const progressKey = `student_progress_${student.id}`;
+        const progress = JSON.parse(localStorage.getItem(progressKey) || '{}');
+        return {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone || 'غير محدد',
+          joinDate: student.joinDate,
+          completedLessons: progress.completedLessons || 0,
+          totalLessons: totalLessons,
+          examScore: progress.examScore || 0,
+          status: student.status || 'pending',
+        };
+      });
+      setStudents(studentsWithProgress);
+    }
+  };
+
   const renderStudentDetails = () => {
     if (!selectedStudent) return null;
 
@@ -744,7 +805,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const renderStudents = () => (
     <div className="space-y-4">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -759,10 +820,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">الطلاب النشطون</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">
-                {students.filter(s => s.completedLessons > 0).length}
-              </p>
+              <p className="text-sm text-gray-500">بانتظار الموافقة</p>
+              <p className="text-3xl font-bold text-amber-600 mt-2">{pendingStudents.length}</p>
+            </div>
+            <div className="bg-amber-100 p-3 rounded-xl">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">الطلاب المعتمدون</p>
+              <p className="text-3xl font-bold text-green-600 mt-2">{approvedStudents.length}</p>
             </div>
             <div className="bg-green-100 p-3 rounded-xl">
               <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -772,24 +842,70 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">متوسط التقدم</p>
-              <p className="text-3xl font-bold text-purple-600 mt-2">
-                {students.length > 0 
-                  ? Math.round(students.reduce((acc, s) => acc + (s.totalLessons > 0 ? (s.completedLessons / s.totalLessons) * 100 : 0), 0) / students.length)
-                  : 0}%
-              </p>
+              <p className="text-sm text-gray-500">مرفوضون</p>
+              <p className="text-3xl font-bold text-red-600 mt-2">{rejectedStudents.length}</p>
             </div>
-            <div className="bg-purple-100 p-3 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+            <div className="bg-red-100 p-3 rounded-xl">
+              <XCircle className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
+      {/* Pending Students Section */}
+      {pendingStudents.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-amber-100 p-2 rounded-lg">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-amber-900">طلبات التسجيل الجديدة</h3>
+              <p className="text-sm text-amber-700">{pendingStudents.length} طالب بانتظار الموافقة</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {pendingStudents.map((student) => (
+              <div key={student.id} className="bg-white rounded-xl p-4 border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {student.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800">{student.name}</p>
+                      <p className="text-sm text-gray-600">{student.email}</p>
+                      <p className="text-xs text-gray-500 mt-1">📱 {student.phone}</p>
+                      <p className="text-xs text-gray-500">📅 {student.joinDate}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleApproveStudent(student.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      موافقة
+                    </button>
+                    <button
+                      onClick={() => handleRejectStudent(student.id)}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      رفض
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Students Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-gray-800">الطلاب المسجلون</h3>
+          <h3 className="text-lg font-bold text-gray-800">الطلاب المعتمدون</h3>
           <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input 
@@ -802,16 +918,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
           </div>
         </div>
 
-        {filteredStudents.length === 0 ? (
+        {approvedStudents.length === 0 ? (
           <div className="text-center py-12">
             <Users className="mx-auto text-gray-300 mb-4" size={48} />
             <h4 className="text-lg font-medium text-gray-600 mb-2">
-              {students.length === 0 ? 'لا يوجد طلاب مسجلون بعد' : 'لا توجد نتائج'}
+              {students.length === 0 ? 'لا يوجد طلاب مسجلون بعد' : 'لا يوجد طلاب معتمدون'}
             </h4>
             <p className="text-gray-500 text-sm">
               {students.length === 0 
                 ? 'سيظهر الطلاب هنا عند تسجيلهم في المنصة'
-                : 'جرب البحث بكلمات مختلفة'}
+                : 'وافق على بعض الطلاب لظهورهم هنا'}
             </p>
           </div>
         ) : (
@@ -828,7 +944,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => (
+                {approvedStudents.map((student) => (
                   <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">

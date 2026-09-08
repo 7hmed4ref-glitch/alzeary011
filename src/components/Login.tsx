@@ -22,6 +22,26 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
     setIsLoading(true);
 
     setTimeout(() => {
+      // First check if user exists
+      const existingUser = db.findUserByEmail(email);
+      
+      if (existingUser && existingUser.role === 'student') {
+        // Check if student is pending
+        if (existingUser.status === 'pending') {
+          setError('حسابك قيد المراجعة. سيتم إشعارك عند الموافقة عليه من قبل الإدارة');
+          notificationService.warning('حسابك قيد المراجعة', 'انتظر موافقة الإدارة');
+          setIsLoading(false);
+          return;
+        }
+        // Check if student is rejected
+        if (existingUser.status === 'rejected') {
+          setError('تم رفض طلب تسجيلك. يرجى التواصل مع الإدارة');
+          notificationService.error('تم رفض طلبك', 'تواصل مع الإدارة للمزيد من المعلومات');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       // Authenticate user using database
       const user = db.authenticate(email, password);
       
@@ -34,6 +54,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
           role: user.role,
           joinDate: user.joinDate,
           phone: user.phone,
+          status: user.status,
         });
       } else {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
@@ -128,31 +149,11 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             </button>
           </form>
 
-          {/* Demo Accounts */}
+          {/* Admin Login Hint */}
           <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 text-center mb-3">حسابات تجريبية:</p>
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  setEmail('7hmed4ref@gmail.com');
-                  setPassword('011156');
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition text-sm"
-              >
-                <Shield className="w-4 h-4" />
-                <span>دخول كمدير (7hmed4ref@gmail.com)</span>
-              </button>
-              <button
-                onClick={() => {
-                  setEmail('student@example.com');
-                  setPassword('student123');
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition text-sm"
-              >
-                <GraduationCap className="w-4 h-4" />
-                <span>دخول كطالب (student@example.com)</span>
-              </button>
-            </div>
+            <p className="text-sm text-gray-500 text-center">
+              هل أنت مدير؟ استخدم بيانات المدير الخاصة بك
+            </p>
           </div>
 
           {/* Register Link */}

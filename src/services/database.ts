@@ -10,6 +10,7 @@ export interface User {
   phone?: string;
   joinDate: string;
   avatar?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Lesson {
@@ -126,9 +127,32 @@ class Database {
   authenticate(email: string, password: string): User | null {
     const user = this.findUserByEmail(email);
     if (user && user.password === password) {
+      // Check if student is approved (admins are always approved)
+      if (user.role === 'student' && user.status !== 'approved') {
+        return null; // Student not approved yet
+      }
       return user;
     }
     return null;
+  }
+
+  // Update user status
+  updateUserStatus(userId: number, status: 'pending' | 'approved' | 'rejected'): void {
+    const users = this.getUsers();
+    const updatedUsers = users.map(u => 
+      u.id === userId ? { ...u, status } : u
+    );
+    this.saveUsers(updatedUsers);
+  }
+
+  // Get pending students
+  getPendingStudents(): User[] {
+    return this.getUsers().filter(u => u.role === 'student' && u.status === 'pending');
+  }
+
+  // Get approved students
+  getApprovedStudents(): User[] {
+    return this.getUsers().filter(u => u.role === 'student' && u.status === 'approved');
   }
 
   // Lessons
@@ -343,6 +367,7 @@ class Database {
         email: '7hmed4ref@gmail.com',
         password: '011156',
         role: 'admin',
+        status: 'approved', // Admin is always approved
       });
     }
   }

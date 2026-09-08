@@ -78,6 +78,8 @@ export interface User {
   avatar?: string;
   phone?: string;
   joinDate: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  password?: string;
 }
 
 export interface AdminStats {

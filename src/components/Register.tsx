@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User } from '../types';
 import { db } from '../services/database';
 import { notificationService } from '../services/notificationService';
-import { Mail, Lock, Eye, EyeOff, UserPlus, GraduationCap, Phone, User as UserIcon, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, UserPlus, GraduationCap, Phone, User as UserIcon, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
@@ -18,6 +18,13 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  const validateEgyptianPhone = (phone: string): boolean => {
+    // Egyptian phone numbers: 01XXXXXXXXX (11 digits starting with 01)
+    const egyptianPhoneRegex = /^01[0-9]{9}$/;
+    return egyptianPhoneRegex.test(phone);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +43,13 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
       return;
     }
 
+    // Validate Egyptian phone number
+    if (!validateEgyptianPhone(phone)) {
+      setError('رقم الهاتف غير صحيح. يجب أن يكون رقم مصري صحيح (مثال: 01XXXXXXXXX)');
+      notificationService.error('خطأ في التحقق', 'رقم الهاتف يجب أن يكون مصري صحيح');
+      return;
+    }
+
     // Check if email already exists
     const existingUser = db.findUserByEmail(email);
     if (existingUser) {
@@ -48,25 +62,21 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
 
     setTimeout(() => {
       try {
-        // Add user to database
+        // Add user to database with pending status
         const newUser = db.addUser({
           name,
           email,
           phone,
           password,
           role: 'student',
+          status: 'pending', // New students start as pending
         });
 
-        notificationService.success('تم إنشاء الحساب بنجاح', 'مرحباً بك في المنصة التعليمية');
+        notificationService.success('تم إرسال طلب التسجيل بنجاح', 'سيتم مراجعة طلبك من قبل الإدارة');
+        setRegistrationSuccess(true);
         
-        onRegister({
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          joinDate: newUser.joinDate,
-          phone: newUser.phone,
-        });
+        // Don't auto-login, wait for admin approval
+        // User will need to wait for admin approval
       } catch (err) {
         setError('حدث خطأ أثناء إنشاء الحساب');
         notificationService.error('خطأ', 'فشل في إنشاء الحساب');
@@ -74,6 +84,37 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
       setIsLoading(false);
     }, 1000);
   };
+
+  // Show success message after registration
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+            <CheckCircle className="w-12 h-12 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">تم إرسال طلب التسجيل بنجاح!</h2>
+          <p className="text-gray-600 mb-6">
+            سيتم مراجعة طلبك من قبل الإدارة. ستحصل على إشعار عند الموافقة على حسابك.
+          </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-right">
+            <p className="text-sm text-blue-800 font-medium mb-2">ملاحظات مهمة:</p>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• سيتم مراجعة طلبك خلال 24 ساعة</li>
+              <li>• تأكد من صحة بريدك الإلكتروني ورقم هاتفك</li>
+              <li>• يمكنك تسجيل الدخول بعد الموافقة على حسابك</li>
+            </ul>
+          </div>
+          <button
+            onClick={onSwitchToLogin}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition shadow-lg"
+          >
+            العودة إلى تسجيل الدخول
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -129,7 +170,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
             {/* Phone Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                رقم الهاتف (اختياري)
+                رقم الهاتف المصري <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -138,9 +179,12 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="05xxxxxxxx"
+                  placeholder="01XXXXXXXXX"
+                  maxLength={11}
+                  required
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">مثال: 01012345678</p>
             </div>
 
             {/* Password Field */}
