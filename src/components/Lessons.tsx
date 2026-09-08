@@ -18,7 +18,27 @@ interface LessonsProps {
 }
 
 const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
-  const [lessonsData, setLessonsData] = useState<Lesson[]>(initialLessons);
+  const [lessonsData, setLessonsData] = useState<Lesson[]>(() => {
+    const stored = localStorage.getItem('admin_lessons');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    return initialLessons;
+  });
+
+  // Sync with admin changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem('admin_lessons');
+      if (stored) {
+        const adminLessons = JSON.parse(stored);
+        if (adminLessons.length !== lessonsData.length) {
+          setLessonsData(adminLessons);
+        }
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [lessonsData.length]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoWatched, setVideoWatched] = useState(false);

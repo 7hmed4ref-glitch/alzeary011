@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LiveSession } from '../types';
 import { liveSessions as initialSessions } from '../data';
 import {
@@ -14,7 +14,25 @@ import {
 } from 'lucide-react';
 
 const LiveStream: React.FC = () => {
-  const [sessions] = useState<LiveSession[]>(initialSessions);
+  const [sessions, setSessions] = useState<LiveSession[]>(() => {
+    const stored = localStorage.getItem('admin_live_sessions');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    return initialSessions;
+  });
+
+  // Sync with admin changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem('admin_live_sessions');
+      if (stored) {
+        const adminSessions = JSON.parse(stored);
+        setSessions(adminSessions);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
   const [activeSession, setActiveSession] = useState<LiveSession | null>(null);
   const [chatMessages, setChatMessages] = useState([
     { id: 1, user: 'أحمد', message: 'مرحباً، هل يمكن إعادة الشرح؟', time: '10:05' },
