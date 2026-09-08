@@ -21,7 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
 
     setTimeout(() => {
       // محاكاة تسجيل الدخول
-      if (email === 'admin@platform.com' && password === 'admin123') {
+      if (email === '7hmed4ref@gmail.com' && password === '011156') {
         onLogin({
           id: 0,
           name: 'مدير النظام',
@@ -145,13 +145,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
             <div className="space-y-2">
               <button
                 onClick={() => {
-                  setEmail('admin@platform.com');
-                  setPassword('admin123');
+                  setEmail('7hmed4ref@gmail.com');
+                  setPassword('011156');
                 }}
                 className="w-full flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition text-sm"
               >
                 <Shield className="w-4 h-4" />
-                <span>دخول كمدير (admin@platform.com)</span>
+                <span>دخول كمدير (7hmed4ref@gmail.com)</span>
               </button>
               <button
                 onClick={() => {
