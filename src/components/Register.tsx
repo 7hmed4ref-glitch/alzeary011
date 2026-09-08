@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
+import { db } from '../services/database';
+import { notificationService } from '../services/notificationService';
 import { Mail, Lock, Eye, EyeOff, UserPlus, GraduationCap, Phone, User as UserIcon, ArrowRight } from 'lucide-react';
 
 interface RegisterProps {
@@ -21,34 +23,54 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin }) => {
     e.preventDefault();
     setError('');
 
+    // Validation
     if (password !== confirmPassword) {
       setError('كلمتا المرور غير متطابقتين');
+      notificationService.error('خطأ في التحقق', 'كلمتا المرور غير متطابقتين');
       return;
     }
 
     if (password.length < 6) {
       setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      notificationService.error('خطأ في التحقق', 'كلمة المرور قصيرة جداً');
+      return;
+    }
+
+    // Check if email already exists
+    const existingUser = db.findUserByEmail(email);
+    if (existingUser) {
+      setError('هذا البريد الإلكتروني مسجل مسبقاً');
+      notificationService.error('خطأ', 'البريد الإلكتروني مسجل مسبقاً');
       return;
     }
 
     setIsLoading(true);
 
     setTimeout(() => {
-      const newUser: User = {
-        id: Date.now(),
-        name,
-        email,
-        role: 'student',
-        phone,
-        joinDate: new Date().toISOString().split('T')[0],
-      };
+      try {
+        // Add user to database
+        const newUser = db.addUser({
+          name,
+          email,
+          phone,
+          password,
+          role: 'student',
+        });
 
-      // حفظ المستخدم في localStorage
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      storedUsers.push(newUser);
-      localStorage.setItem('users', JSON.stringify(storedUsers));
-
-      onRegister(newUser);
+        notificationService.success('تم إنشاء الحساب بنجاح', 'مرحباً بك في المنصة التعليمية');
+        
+        onRegister({
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          joinDate: newUser.joinDate,
+          phone: newUser.phone,
+        });
+      } catch (err) {
+        setError('حدث خطأ أثناء إنشاء الحساب');
+        notificationService.error('خطأ', 'فشل في إنشاء الحساب');
+      }
       setIsLoading(false);
     }, 1000);
   };

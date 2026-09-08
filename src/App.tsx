@@ -8,6 +8,8 @@ import Complaints from './components/Complaints';
 import Login from './components/Login';
 import Register from './components/Register';
 import AdminDashboard from './components/AdminDashboard';
+import NotificationToast from './components/NotificationToast';
+import SplashScreen from './components/SplashScreen';
 import { Page, User } from './types';
 import { LogOut, User as UserIcon, Shield, GraduationCap } from 'lucide-react';
 
@@ -16,6 +18,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authPage, setAuthPage] = useState<'login' | 'register'>('login');
+  const [showSplash, setShowSplash] = useState(true);
 
   // تحميل المستخدم من localStorage
   useEffect(() => {
@@ -24,6 +27,11 @@ function App() {
       setCurrentUser(JSON.parse(storedUser));
     }
   }, []);
+
+  // عرض شاشة البداية
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -70,6 +78,9 @@ function App() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Notification Toast */}
+      <NotificationToast />
+
       {/* Sidebar */}
       <Sidebar
         currentPage={currentPage}

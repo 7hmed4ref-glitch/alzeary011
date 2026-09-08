@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
+import { db } from '../services/database';
+import { notificationService } from '../services/notificationService';
 import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, GraduationCap, Shield } from 'lucide-react';
 
 interface LoginProps {
@@ -20,38 +22,25 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister }) => {
     setIsLoading(true);
 
     setTimeout(() => {
-      // محاكاة تسجيل الدخول
-      if (email === '7hmed4ref@gmail.com' && password === '011156') {
+      // Authenticate user using database
+      const user = db.authenticate(email, password);
+      
+      if (user) {
+        notificationService.success('تم تسجيل الدخول بنجاح', `مرحباً ${user.name}`);
         onLogin({
-          id: 0,
-          name: 'مدير النظام',
-          email: email,
-          role: 'admin',
-          joinDate: '2024-01-01',
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          joinDate: user.joinDate,
+          phone: user.phone,
         });
-      } else if (email && password.length >= 6) {
-        // تسجيل دخول طالب
-        const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-        const user = storedUsers.find((u: any) => u.email === email);
-        
-        if (user) {
-          onLogin(user);
-        } else {
-          // إنشاء مستخدم افتراضي للعرض التوضيحي
-          const newUser: User = {
-            id: Date.now(),
-            name: email.split('@')[0],
-            email: email,
-            role: 'student',
-            joinDate: new Date().toISOString().split('T')[0],
-          };
-          onLogin(newUser);
-        }
       } else {
         setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        notificationService.error('فشل تسجيل الدخول', 'تحقق من بياناتك وحاول مرة أخرى');
       }
       setIsLoading(false);
-    }, 1000);
+    }, 800);
   };
 
   return (
