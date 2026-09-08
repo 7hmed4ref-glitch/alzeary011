@@ -5,6 +5,8 @@ export interface Lesson {
   duration: string;
   videoUrl: string;
   thumbnail: string;
+  pdfUrl?: string;
+  pdfName?: string;
   quiz: QuizQuestion[];
   isCompleted: boolean;
   isVideoWatched: boolean;

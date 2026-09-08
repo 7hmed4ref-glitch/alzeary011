@@ -88,6 +88,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     description: '',
     duration: '',
     videoUrl: '',
+    pdfUrl: '',
+    pdfName: '',
   });
 
   // Exam form state
@@ -145,6 +147,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         description: lessonForm.description,
         duration: lessonForm.duration,
         videoUrl: lessonForm.videoUrl,
+        pdfUrl: lessonForm.pdfUrl,
+        pdfName: lessonForm.pdfName,
       } : l));
     } else {
       const newLesson: Lesson = {
@@ -154,6 +158,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
         duration: lessonForm.duration,
         videoUrl: lessonForm.videoUrl,
         thumbnail: '',
+        pdfUrl: lessonForm.pdfUrl,
+        pdfName: lessonForm.pdfName,
         isCompleted: false,
         isVideoWatched: false,
         isQuizPassed: false,
@@ -168,7 +174,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
     setShowLessonModal(false);
     setEditingLesson(null);
-    setLessonForm({ title: '', description: '', duration: '', videoUrl: '' });
+    setLessonForm({ title: '', description: '', duration: '', videoUrl: '', pdfUrl: '', pdfName: '' });
   };
 
   const handleEditLesson = (lesson: Lesson) => {
@@ -178,6 +184,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       description: lesson.description,
       duration: lesson.duration,
       videoUrl: lesson.videoUrl,
+      pdfUrl: lesson.pdfUrl || '',
+      pdfName: lesson.pdfName || '',
     });
     setShowLessonModal(true);
   };
@@ -196,6 +204,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       const url = URL.createObjectURL(file);
       setLessonForm({ ...lessonForm, videoUrl: url });
     }
+  };
+
+  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('يرجى رفع ملف PDF فقط');
+        return;
+      }
+      // For demo, we create a local URL
+      const url = URL.createObjectURL(file);
+      setLessonForm({ ...lessonForm, pdfUrl: url, pdfName: file.name });
+    }
+  };
+
+  const handleRemovePdf = () => {
+    setLessonForm({ ...lessonForm, pdfUrl: '', pdfName: '' });
   };
 
   // Exam handlers
@@ -454,7 +479,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-gray-800">إدارة الحصص الدراسية</h3>
         <button
-          onClick={() => { setEditingLesson(null); setLessonForm({ title: '', description: '', duration: '', videoUrl: '' }); setShowLessonModal(true); }}
+          onClick={() => { setEditingLesson(null); setLessonForm({ title: '', description: '', duration: '', videoUrl: '', pdfUrl: '', pdfName: '' }); setShowLessonModal(true); }}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-indigo-700 transition shadow-md"
         >
           <Plus className="w-4 h-4" />
@@ -481,10 +506,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
               </div>
               <div className="p-4">
                 <p className="text-sm text-gray-600 mb-3">{lesson.description}</p>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                   <Clock className="w-4 h-4" />
                   <span>{lesson.duration}</span>
                 </div>
+                {lesson.pdfUrl && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 mb-3 bg-green-50 px-3 py-2 rounded-lg">
+                    <FileText className="w-4 h-4" />
+                    <span className="truncate">{lesson.pdfName || 'ملف PDF مرفق'}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleEditLesson(lesson)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition text-sm font-medium">
                     <Edit className="w-4 h-4" />
@@ -747,6 +778,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     <p className="text-xs text-gray-400 mt-1">MP4, WebM, OGG</p>
                   </label>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ملف PDF (اختياري)</label>
+                {lessonForm.pdfUrl ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      <span className="text-sm text-green-700 font-medium">{lessonForm.pdfName}</span>
+                    </div>
+                    <button onClick={handleRemovePdf} className="p-1 hover:bg-green-100 rounded">
+                      <X className="w-4 h-4 text-green-600" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-indigo-500 transition cursor-pointer">
+                    <input type="file" accept="application/pdf" onChange={handlePdfUpload} className="hidden" id="pdf-upload" />
+                    <label htmlFor="pdf-upload" className="cursor-pointer">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">اضغط هنا لرفع ملف PDF</p>
+                      <p className="text-xs text-gray-400 mt-1">سيظهر للطلاب أسفل الفيديو</p>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
             <div className="p-6 border-t border-gray-200 flex gap-3">

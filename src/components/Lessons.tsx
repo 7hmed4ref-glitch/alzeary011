@@ -11,6 +11,8 @@ import {
   Video,
   HelpCircle,
   BookOpen,
+  FileText,
+  Download,
 } from 'lucide-react';
 
 interface LessonsProps {
@@ -182,6 +184,33 @@ const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
                 )}
               </div>
             </div>
+
+            {/* PDF Section */}
+            {selectedLesson.pdfUrl && (
+              <div className="mt-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-50 p-2.5 rounded-xl">
+                      <FileText className="w-6 h-6 text-red-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-800">ملف الحصة (PDF)</h4>
+                      <p className="text-sm text-gray-500">{selectedLesson.pdfName || 'مرفق الحصة'}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedLesson.pdfUrl}
+                    download={selectedLesson.pdfName || 'lesson.pdf'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-gradient-to-l from-red-500 to-pink-500 text-white px-4 py-2.5 rounded-xl font-medium hover:from-red-600 hover:to-pink-600 transition shadow-md"
+                  >
+                    <Download className="w-4 h-4" />
+                    تحميل الملف
+                  </a>
+                </div>
+              </div>
+            )}
 
             {/* Quiz Section */}
             {videoWatched && (
@@ -408,6 +437,12 @@ const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
                     {lesson.isQuizPassed && (
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                         تم الاجتياز ✓
+                      </span>
+                    )}
+                    {lesson.pdfUrl && (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <FileText size={10} />
+                        PDF
                       </span>
                     )}
                   </div>
