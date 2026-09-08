@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Page, Lesson, Exam, QuizQuestion, LiveSession } from '../types';
+import { db } from '../services/database';
 import {
   Users,
   BookOpen,
@@ -31,6 +32,8 @@ import {
   MicOff,
   VideoOff,
   Circle,
+  Mail,
+  Phone,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -38,7 +41,7 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-interface Student {
+interface StudentProgress {
   id: number;
   name: string;
   email: string;
@@ -52,6 +55,9 @@ interface Student {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'lessons' | 'exams' | 'live' | 'complaints' | 'settings'>('overview');
+  const [students, setStudents] = useState<StudentProgress[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<StudentProgress | null>(null);
 
   // State for lessons
   const [lessons, setLessons] = useState<Lesson[]>(() => {
@@ -71,14 +77,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     return stored ? JSON.parse(stored) : [];
   });
 
-  // Students data
-  const [students] = useState<Student[]>([
-    { id: 1, name: 'أحمد محمد', email: 'ahmed@example.com', phone: '0501234567', joinDate: '2024-01-15', completedLessons: 3, totalLessons: 5, examScore: 85, status: 'active' },
-    { id: 2, name: 'فاطمة علي', email: 'fatima@example.com', phone: '0509876543', joinDate: '2024-01-20', completedLessons: 5, totalLessons: 5, examScore: 92, status: 'active' },
-    { id: 3, name: 'محمد سعيد', email: 'mohammed@example.com', phone: '0551112233', joinDate: '2024-02-01', completedLessons: 2, totalLessons: 5, examScore: 70, status: 'active' },
-    { id: 4, name: 'نورة حسن', email: 'noura@example.com', phone: '0554445566', joinDate: '2024-02-10', completedLessons: 4, totalLessons: 5, examScore: 88, status: 'active' },
-    { id: 5, name: 'عبدالله خالد', email: 'abdullah@example.com', phone: '0557778899', joinDate: '2024-02-15', completedLessons: 1, totalLessons: 5, examScore: 65, status: 'inactive' },
-  ]);
+  // Load actual students from database
+  useEffect(() => {
+    const loadStudents = () => {
+      const users = db.getUsers();
+      const studentUsers = users.filter(u => u.role === 'student');
+      
+      // Get lessons to calculate progress
+      const allLessons = db.getLessons();
+      const totalLessons = allLessons.length;
+      
+      // Map students with their progress
+      const studentsWithProgress: StudentProgress[] = studentUsers.map(student => {
+        // Get student's progress from localStorage
+        const progressKey = `student_progress_${student.id}`;
+        const progress = JSON.parse(localStorage.getItem(progressKey) || '{}');
+        
+        return {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone || 'غير محدد',
+          joinDate: student.joinDate,
+          completedLessons: progress.completedLessons || 0,
+          totalLessons: totalLessons,
+          examScore: progress.examScore || 0,
+          status: 'active' as const,
+        };
+      });
+      
+      setStudents(studentsWithProgress);
+    };
+    
+    loadStudents();
+    
+    // Refresh students list every 3 seconds to show new registrations
+    const interval = setInterval(loadStudents, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Modal states
   const [showLessonModal, setShowLessonModal] = useState(false);
@@ -617,61 +653,237 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     </div>
   );
 
-  const renderStudents = () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-800">إدارة الطلاب</h3>
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input type="text" placeholder="بحث..." className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" />
+  const filteredStudents = students.filter(student => 
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderStudentDetails = () => {
+    if (!selectedStudent) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-800">تفاصيل الطالب</h3>
+            <button onClick={() => setSelectedStudent(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Student Info */}
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                {selectedStudent.name.charAt(0)}
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-gray-800">{selectedStudent.name}</h4>
+                <p className="text-gray-500">{selectedStudent.email}</p>
+                <p className="text-sm text-gray-400 mt-1">انضم في {selectedStudent.joinDate}</p>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-blue-600">{selectedStudent.completedLessons}</p>
+                <p className="text-sm text-gray-600 mt-1">حصص مكتملة</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-purple-600">{selectedStudent.totalLessons}</p>
+                <p className="text-sm text-gray-600 mt-1">إجمالي الحصص</p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-green-600">{selectedStudent.examScore}%</p>
+                <p className="text-sm text-gray-600 mt-1">متوسط الدرجات</p>
+              </div>
+              <div className="bg-amber-50 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-amber-600">
+                  {selectedStudent.totalLessons > 0 
+                    ? Math.round((selectedStudent.completedLessons / selectedStudent.totalLessons) * 100)
+                    : 0}%
+                </p>
+                <p className="text-sm text-gray-600 mt-1">نسبة الإنجاز</p>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">التقدم في المنصة</span>
+                <span className="text-sm text-gray-500">
+                  {selectedStudent.completedLessons} / {selectedStudent.totalLessons}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-l from-indigo-500 to-purple-500 h-3 rounded-full transition-all"
+                  style={{ width: `${selectedStudent.totalLessons > 0 ? (selectedStudent.completedLessons / selectedStudent.totalLessons) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Contact Info */}
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <h5 className="font-medium text-gray-800 mb-3">معلومات التواصل</h5>
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-gray-400" />
+                <span className="text-sm text-gray-700">{selectedStudent.email}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-gray-400" />
+                <span className="text-sm text-gray-700">{selectedStudent.phone}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">الطالب</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">البريد</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">التقدم</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">الدرجة</th>
-              <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">الحالة</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map((student) => (
-              <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-4 px-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                      {student.name.charAt(0)}
-                    </div>
-                    <p className="font-medium text-gray-800">{student.name}</p>
-                  </div>
-                </td>
-                <td className="py-4 px-4 text-sm text-gray-600">{student.email}</td>
-                <td className="py-4 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${(student.completedLessons / student.totalLessons) * 100}%` }} />
-                    </div>
-                    <span className="text-xs text-gray-500">{student.completedLessons}/{student.totalLessons}</span>
-                  </div>
-                </td>
-                <td className="py-4 px-4">
-                  <span className={`text-sm font-medium ${student.examScore >= 80 ? 'text-green-600' : student.examScore >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
-                    {student.examScore}%
-                  </span>
-                </td>
-                <td className="py-4 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${student.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {student.status === 'active' ? 'نشط' : 'غير نشط'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    );
+  };
+
+  const renderStudents = () => (
+    <div className="space-y-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">إجمالي الطلاب</p>
+              <p className="text-3xl font-bold text-gray-800 mt-2">{students.length}</p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-xl">
+              <Users className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">الطلاب النشطون</p>
+              <p className="text-3xl font-bold text-green-600 mt-2">
+                {students.filter(s => s.completedLessons > 0).length}
+              </p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-xl">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">متوسط التقدم</p>
+              <p className="text-3xl font-bold text-purple-600 mt-2">
+                {students.length > 0 
+                  ? Math.round(students.reduce((acc, s) => acc + (s.totalLessons > 0 ? (s.completedLessons / s.totalLessons) * 100 : 0), 0) / students.length)
+                  : 0}%
+              </p>
+            </div>
+            <div className="bg-purple-100 p-3 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Students Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-gray-800">الطلاب المسجلون</h3>
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input 
+              type="text" 
+              placeholder="بحث عن طالب..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            />
+          </div>
+        </div>
+
+        {filteredStudents.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="mx-auto text-gray-300 mb-4" size={48} />
+            <h4 className="text-lg font-medium text-gray-600 mb-2">
+              {students.length === 0 ? 'لا يوجد طلاب مسجلون بعد' : 'لا توجد نتائج'}
+            </h4>
+            <p className="text-gray-500 text-sm">
+              {students.length === 0 
+                ? 'سيظهر الطلاب هنا عند تسجيلهم في المنصة'
+                : 'جرب البحث بكلمات مختلفة'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">الطالب</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">البريد</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">تاريخ الانضمام</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">التقدم</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">الدرجة</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{student.name}</p>
+                          <p className="text-xs text-gray-500">{student.phone}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600">{student.email}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600">{student.joinDate}</td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-indigo-500 h-2 rounded-full transition-all" 
+                            style={{ width: `${student.totalLessons > 0 ? (student.completedLessons / student.totalLessons) * 100 : 0}%` }} 
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {student.completedLessons}/{student.totalLessons}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`text-sm font-medium ${
+                        student.examScore >= 80 ? 'text-green-600' : 
+                        student.examScore >= 60 ? 'text-amber-600' : 
+                        'text-red-600'
+                      }`}>
+                        {student.examScore}%
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <button 
+                        onClick={() => setSelectedStudent(student)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        عرض
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Student Details Modal */}
+      {renderStudentDetails()}
     </div>
   );
 

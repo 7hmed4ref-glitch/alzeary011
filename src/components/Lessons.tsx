@@ -28,6 +28,9 @@ const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
     return initialLessons;
   });
 
+  // Get current user
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
   // Sync with admin changes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -41,6 +44,19 @@ const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
     }, 2000);
     return () => clearInterval(interval);
   }, [lessonsData.length]);
+
+  // Save student progress to localStorage
+  const saveStudentProgress = (completedLessons: number, examScore: number) => {
+    if (currentUser && currentUser.role === 'student') {
+      const progressKey = `student_progress_${currentUser.id}`;
+      const progress = {
+        completedLessons,
+        examScore,
+        lastUpdated: new Date().toISOString(),
+      };
+      localStorage.setItem(progressKey, JSON.stringify(progress));
+    }
+  };
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoWatched, setVideoWatched] = useState(false);
@@ -104,6 +120,12 @@ const Lessons: React.FC<LessonsProps> = ({ setCurrentPage }) => {
             : l
         )
       );
+
+      // Save student progress
+      const completedCount = lessonsData.filter(l => l.isCompleted || l.id === selectedLesson.id).length;
+      const totalLessons = lessonsData.length;
+      const avgScore = Math.round((score / selectedLesson.quiz.length) * 100);
+      saveStudentProgress(completedCount, avgScore);
     }
   };
 
