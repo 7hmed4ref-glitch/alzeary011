@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page } from '../types';
+import { Page, User } from '../types';
 import {
   BookOpen,
   FileText,
@@ -27,6 +27,8 @@ const menuItems: { page: Page; label: string; icon: React.ReactNode }[] = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isOpen, setIsOpen }) => {
+  const currentUser: User | null = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
   return (
     <>
       {/* Mobile overlay */}
@@ -89,11 +91,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage, isOpen, 
           <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                ط
+                {currentUser?.name?.charAt(0) || 'ط'}
               </div>
               <div>
-                <p className="font-medium text-sm">طالب تجريبي</p>
-                <p className="text-indigo-300 text-xs">الصف الثالث الثانوي</p>
+                <p className="font-medium text-sm">{currentUser?.name || 'طالب'}</p>
+                <p className="text-indigo-300 text-xs">{currentUser?.email || 'student@example.com'}</p>
               </div>
             </div>
           </div>

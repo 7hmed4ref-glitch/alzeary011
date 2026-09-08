@@ -67,3 +67,22 @@ export interface Complaint {
 }
 
 export type Page = 'lessons' | 'lesson-player' | 'exams' | 'qa' | 'live' | 'complaints';
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'student' | 'admin';
+  avatar?: string;
+  phone?: string;
+  joinDate: string;
+}
+
+export interface AdminStats {
+  totalStudents: number;
+  totalLessons: number;
+  totalExams: number;
+  activeLiveSessions: number;
+  pendingComplaints: number;
+  unansweredQuestions: number;
+}
