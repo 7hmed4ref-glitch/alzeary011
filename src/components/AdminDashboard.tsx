@@ -123,8 +123,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [showExamModal, setShowExamModal] = useState(false);
   const [showLiveModal, setShowLiveModal] = useState(false);
+  const [showCreateStudentModal, setShowCreateStudentModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [createdStudentCredentials, setCreatedStudentCredentials] = useState<{
+    name: string;
+    email: string;
+    password: string;
+    studentCode: string;
+  } | null>(null);
 
   // Lesson form state
   const [lessonForm, setLessonForm] = useState({
@@ -719,6 +726,95 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     }
   };
 
+  // Generate random student code
+  const generateStudentCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'STU-';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  // Generate random password
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+    let password = '';
+    for (let i = 0; i < 10; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  // Create student account
+  const handleCreateStudent = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const phone = formData.get('phone') as string;
+
+    // Validate Egyptian phone
+    const egyptianPhoneRegex = /^01[0-9]{9}$/;
+    if (!egyptianPhoneRegex.test(phone)) {
+      notificationService.error('رقم هاتف غير صحيح', 'يجب أن يكون رقم مصري صحيح (01XXXXXXXXX)');
+      return;
+    }
+
+    // Check if email exists
+    const existingUser = db.findUserByEmail(email);
+    if (existingUser) {
+      notificationService.error('البريد الإلكتروني موجود', 'هذا البريد مسجل مسبقاً');
+      return;
+    }
+
+    // Generate credentials
+    const password = generatePassword();
+    const studentCode = generateStudentCode();
+
+    // Create user
+    db.addUser({
+      name,
+      email,
+      phone,
+      password,
+      role: 'student',
+      status: 'approved',
+    });
+
+    // Show credentials
+    setCreatedStudentCredentials({
+      name,
+      email,
+      password,
+      studentCode,
+    });
+
+    notificationService.success('تم إنشاء الحساب', 'يمكنك الآن إعطاء البيانات للطالب');
+    
+    // Refresh students list
+    const users = db.getUsers();
+    const studentUsers = users.filter((u: any) => u.role === 'student');
+    const allLessons = db.getLessons();
+    const totalLessons = allLessons.length;
+    const studentsWithProgress: StudentProgress[] = studentUsers.map((student: any) => {
+      const progressKey = `student_progress_${student.id}`;
+      const progress = JSON.parse(localStorage.getItem(progressKey) || '{}');
+      return {
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone || 'غير محدد',
+        joinDate: student.joinDate,
+        completedLessons: progress.completedLessons || 0,
+        totalLessons: totalLessons,
+        examScore: progress.examScore || 0,
+        status: student.status || 'pending',
+      };
+    });
+    setStudents(studentsWithProgress);
+  };
+
   const renderStudentDetails = () => {
     if (!selectedStudent) return null;
 
@@ -804,6 +900,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
 
   const renderStudents = () => (
     <div className="space-y-4">
+      {/* Create Student Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowCreateStudentModal(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition shadow-lg"
+        >
+          <Plus className="w-5 h-5" />
+          إنشاء حساب طالب جديد
+        </button>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -1614,6 +1721,188 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 إنشاء الجلسة
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Student Modal */}
+      {showCreateStudentModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-800">إنشاء حساب طالب جديد</h3>
+              <button onClick={() => { setShowCreateStudentModal(false); setCreatedStudentCredentials(null); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {!createdStudentCredentials ? (
+              <form onSubmit={handleCreateStudent} className="p-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>ملاحظة:</strong> سيتم إنشاء حساب طالب جديد بشكل مباشر وإعطائه بيانات الدخول. لن يحتاج الطالب للتسجيل.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">الاسم الكامل *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="مثال: أحمد محمد علي"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">البريد الإلكتروني *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="example@email.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف المصري *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    pattern="01[0-9]{9}"
+                    maxLength={11}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="01XXXXXXXXX"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">مثال: 01012345678</p>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800">
+                    <strong>سيتم توليد:</strong>
+                  </p>
+                  <ul className="text-sm text-green-700 mt-2 space-y-1">
+                    <li>• كود طالب فريد</li>
+                    <li>• كلمة مرور قوية</li>
+                    <li>• الحساب سيكون معتمد مباشرة</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateStudentModal(false)}
+                    className="flex-1 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    إنشاء الحساب
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="p-6 space-y-4">
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h4 className="text-xl font-bold text-green-800 mb-2">تم إنشاء الحساب بنجاح!</h4>
+                  <p className="text-sm text-green-700">يمكنك الآن إعطاء البيانات التالية للطالب</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs text-gray-500 mb-1">اسم الطالب</p>
+                    <p className="font-medium text-gray-800">{createdStudentCredentials.name}</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs text-gray-500 mb-1">البريد الإلكتروني</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-800">{createdStudentCredentials.email}</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdStudentCredentials.email);
+                          notificationService.success('تم النسخ', 'تم نسخ البريد الإلكتروني');
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-xs text-blue-600 mb-1">كود الطالب</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-mono font-bold text-blue-800 text-lg">{createdStudentCredentials.studentCode}</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdStudentCredentials.studentCode);
+                          notificationService.success('تم النسخ', 'تم نسخ كود الطالب');
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-xs text-purple-600 mb-1">كلمة المرور</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-mono font-bold text-purple-800">{createdStudentCredentials.password}</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(createdStudentCredentials.password);
+                          notificationService.success('تم النسخ', 'تم نسخ كلمة المرور');
+                        }}
+                        className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        نسخ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800 font-medium mb-2">⚠️ مهم:</p>
+                  <ul className="text-xs text-amber-700 space-y-1">
+                    <li>• احفظ هذه البيانات في مكان آمن</li>
+                    <li>• أعطها للطالب مباشرة</li>
+                    <li>• لا يمكن استعادتها بعد إغلاق هذه النافذة</li>
+                    <li>• يمكن للطالب تغيير كلمة المرور لاحقاً</li>
+                  </ul>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCreatedStudentCredentials(null);
+                  }}
+                  className="w-full py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition"
+                >
+                  إنشاء حساب طالب آخر
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowCreateStudentModal(false);
+                    setCreatedStudentCredentials(null);
+                  }}
+                  className="w-full py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+                >
+                  إغلاق
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
