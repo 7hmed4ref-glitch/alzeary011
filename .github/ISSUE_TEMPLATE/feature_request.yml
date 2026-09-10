@@ -1,0 +1,71 @@
+name: Feature Request
+description: اقترح ميزة جديدة للمنصة
+title: "[Feature]: "
+labels: ["enhancement", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        شكراً لاقتراح ميزة جديدة! يرجى ملء المعلومات التالية لمساعدتنا على فهم اقتراحك.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: هل اقتراحك مرتبط بمشكلة؟
+      description: اشرح المشكلة التي تواجهها والتي ستحلها هذه الميزة
+      placeholder: دائماً ما أواجه صعوبة في...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: الحل المقترح
+      description: اشرح الحل الذي تقترحه
+      placeholder: أود أن أرى...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: البدائل التي فكرت فيها
+      description: هل فكرت في حلول بديلة؟
+      placeholder: فكرت أيضاً في...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: الأولوية
+      description: ما مستوى أولوية هذه الميزة؟
+      options:
+        - منخفضة - nice to have
+        - متوسطة - would be nice
+        - عالية - important
+        - حرجة - must have
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: سياق إضافي
+      description: أضف أي سياق أو معلومات إضافية
+      placeholder: أضف أي معلومات إضافية هنا...
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: نماذج أو رسومات
+      description: إذا كان لديك نماذج أو رسومات توضيحية، أضفها هنا
+      placeholder: اسحب وأفلت الصور هنا...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: تأكيد
+      options:
+        - label: بحثت في Issues الحالية للتأكد من عدم وجود اقتراح مشابه
+          required: true
+        - label: هذه الميزة تتوافق مع أهداف المشروع
+          required: true

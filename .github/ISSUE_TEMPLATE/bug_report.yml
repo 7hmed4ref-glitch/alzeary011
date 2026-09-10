@@ -1,0 +1,90 @@
+name: Bug Report
+description: أبلغ عن خطأ في المنصة
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        شكراً لتقرير الخطأ! يرجى ملء المعلومات التالية لمساعدتنا على فهم المشكلة.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: وصف الخطأ
+      description: اكتب وصفاً واضحاً ومفصلاً للخطأ
+      placeholder: اشرح الخطأ هنا...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: خطوات إعادة إنتاج الخطأ
+      description: كيف يمكننا إعادة إنتاج هذا الخطأ؟
+      placeholder: |
+        1. اذهب إلى '...'
+        2. اضغط على '...'
+        3. اشاهد الخطأ
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: السلوك المتوقع
+      description: ما الذي تتوقع حدوثه؟
+      placeholder: اشرح ما تتوقع حدوثه...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: السلوك الفعلي
+      description: ما الذي حدث فعلاً؟
+      placeholder: اشرح ما حدث فعلاً...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: لقطات شاشة
+      description: أضف لقطات شاشة إذا أمكن
+      placeholder: اسحب وأفلت الصور هنا...
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: المتصفح
+      description: أي متصفح تستخدم؟
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: نوع الجهاز
+      description: ما نوع الجهاز الذي تستخدمه؟
+      multiple: true
+      options:
+        - Desktop
+        - Tablet
+        - Mobile
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: معلومات إضافية
+      description: أي معلومات إضافية تريد إضافتها؟
+      placeholder: أضف أي معلومات إضافية هنا...
