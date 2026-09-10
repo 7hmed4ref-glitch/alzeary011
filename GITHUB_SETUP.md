@@ -114,17 +114,16 @@ git commit -m "chore: تحديث إعدادات المشروع"
 
 ---
 
-## 🌐 تفعيل GitHub Pages (اختياري)
-
-إذا أردت نشر الموقع على GitHub Pages:
+## 🌐 تفعيل GitHub Pages
 
 ### الطريقة 1: استخدام GitHub Actions (موصى به)
 
 1. تأكد من وجود ملف `.github/workflows/deploy.yml`
-2. اذهب إلى Settings → Pages
-3. Source: Deploy from a branch
-4. Branch: `gh-pages`
-5. احفظ
+2. اذهب إلى **Settings** → **Pages**
+3. في قسم **Source**، اختر **GitHub Actions**
+4. سيتم استخدام workflow الموجود
+5. انتظر حتى اكتمال النشر
+6. الموقع سيكون متاحاً على: `https://YOUR-USERNAME.github.io/educational-platform/`
 
 ### الطريقة 2: استخدام gh-pages
 
@@ -142,19 +141,25 @@ npm run build
 npm run deploy
 ```
 
+ثم في GitHub:
+1. اذهب إلى **Settings** → **Pages**
+2. في قسم **Source**، اختر **Deploy from a branch**
+3. اختر فرع **gh-pages**
+4. احفظ
+
 ---
 
 ## 🔧 إعدادات إضافية
 
 ### إضافة Collaborators
 
-1. اذهب إلى Settings → Collaborators
+1. اذهب إلى **Settings** → **Collaborators**
 2. اضغط "Add people"
 3. ابحث عن المستخدم وأضفه
 
 ### حماية الفرع الرئيسي
 
-1. اذهب إلى Settings → Branches
+1. اذهب إلى **Settings** → **Branches**
 2. اضغط "Add branch protection rule"
 3. Branch name pattern: `main`
 4. ✅ Require pull request reviews before merging
@@ -163,7 +168,7 @@ npm run deploy
 
 ### إضافة Labels
 
-1. اذهب إلى Issues → Labels
+1. اذهب إلى **Issues** → **Labels**
 2. أضف labels مثل:
    - `bug` - للأخطاء
    - `enhancement` - للتحسينات
@@ -173,37 +178,7 @@ npm run deploy
 
 ---
 
-## 📊 استخدام GitHub Projects
-
-لإدارة المهام:
-
-1. اذهب إلى Projects → New project
-2. اختر Template: "Automated kanban"
-3. أضف المهام والأعمدة:
-   - To Do
-   - In Progress
-   - In Review
-   - Done
-
----
-
-## 🔒 إعدادات الأمان
-
-### تفعيل Dependabot
-
-1. اذهب إلى Settings → Code security and analysis
-2. ✅ Enable Dependabot
-3. سيحصل المشروع على تحديثات أمنية تلقائية
-
-### تفعيل Secret scanning
-
-1. اذهب إلى Settings → Code security and analysis
-2. ✅ Enable secret scanning
-3. سيكتشف أي secrets مسربة في الكود
-
----
-
-## 📈 إحصائيات المشروع
+## 📊 إحصائيات المشروع
 
 ### إضافة Badge في README
 
@@ -252,6 +227,27 @@ cat ~/.ssh/id_ed25519.pub
 # انسخ المفتاح وأضفه في GitHub → Settings → SSH and GPG keys
 ```
 
+### المشكلة: الموقع لا يظهر على GitHub Pages
+
+```bash
+# تأكد من أن الملفات موجودة في مجلد dist
+npm run build
+
+# تحقق من إعدادات GitHub Pages
+# Settings → Pages → Source
+
+# إذا كنت تستخدم GitHub Actions، تحقق من:
+# Actions tab → Deploy to GitHub Pages workflow
+```
+
+### المشكلة: "File index.html not found"
+
+تأكد من أن:
+1. ملف `index.html` موجود في الجذر
+2. ملف `src/main.tsx` موجود (وليس `main.jsx`)
+3. ملف `vite.config.js` موجود
+4. قمت بتشغيل `npm run build` قبل الرفع
+
 ---
 
 ## ✅ قائمة التحقق النهائية
@@ -263,9 +259,11 @@ cat ~/.ssh/id_ed25519.pub
 - [ ] `README.md` شامل ومفصل
 - [ ] `LICENSE` موجود
 - [ ] لا توجد ملفات حساسة (كلمات مرور، مفاتيح API)
-- [ ] المشروع يعمل محلياً
+- [ ] المشروع يعمل محلياً (`npm run dev`)
+- [ ] المشروع يبني بنجاح (`npm run build`)
 - [ ] جميع الاختبارات ناجحة
 - [ ] التوثيق محدث
+- [ ] ملف `index.html` يشير إلى `src/main.tsx` (وليس `main.jsx`)
 
 ---
 

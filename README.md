@@ -11,7 +11,7 @@
 
 **منصة تعليمية متكاملة مع نظام إدارة حصص، امتحانات، بث مباشر، وأكثر**
 
-[الميزات](#-الميزات) • [التثبيت](#-التثبيت) • [الاستخدام](#-الاستخدام) • [المساهمة](#-المساهمة)
+[الميزات](#-الميزات) • [التثبيت](#-التثبيت) • [الاستخدام](#-الاستخدام) • [النشر](#-النشر-على-github-pages)
 
 </div>
 
@@ -22,11 +22,11 @@
 - [نظرة عامة](#-نظرة-عامة)
 - [الميزات](#-الميزات)
 - [التقنيات المستخدمة](#-التقنيات-المستخدمة)
-- [التثبيت والتشغيل](#-التثبيت-والتشغيل)
+- [التثبيت](#-التثبيت)
 - [الاستخدام](#-الاستخدام)
+- [النشر على GitHub Pages](#-النشر-على-github-pages)
 - [هيكل المشروع](#-هيكل-المشروع)
 - [المساهمة](#-المساهمة)
-- [الرخصة](#-الرخصة)
 
 ---
 
@@ -135,7 +135,7 @@
 
 ---
 
-## 🚀 التثبيت والتشغيل
+## 🚀 التثبيت
 
 ### المتطلبات
 - Node.js 18+ 
@@ -145,7 +145,7 @@
 
 ```bash
 # 1. استنساخ المشروع
-git clone https://github.com/your-username/educational-platform.git
+git clone https://github.com/YOUR-USERNAME/educational-platform.git
 cd educational-platform
 
 # 2. تثبيت المكتبات
@@ -223,6 +223,70 @@ npm run preview
 
 ---
 
+## 🌐 النشر على GitHub Pages
+
+### الخطوة 1: رفع المشروع على GitHub
+
+```bash
+# تهيئة Git
+git init
+
+# إضافة جميع الملفات
+git add .
+
+# إنشاء أول commit
+git commit -m "Initial commit: منصة تعليمية متكاملة"
+
+# تغيير اسم الفرع إلى main
+git branch -M main
+
+# إضافة remote (استبدل YOUR-USERNAME باسم المستخدم الخاص بك)
+git remote add origin https://github.com/YOUR-USERNAME/educational-platform.git
+
+# رفع المشروع
+git push -u origin main
+```
+
+### الخطوة 2: تفعيل GitHub Pages
+
+#### الطريقة 1: استخدام GitHub Actions (موصى به)
+
+1. اذهب إلى **Settings** → **Pages**
+2. في قسم **Source**، اختر **GitHub Actions**
+3. سيتم استخدام workflow الموجود في `.github/workflows/deploy.yml`
+4. انتظر حتى اكتمال النشر
+5. الموقع سيكون متاحاً على: `https://YOUR-USERNAME.github.io/educational-platform/`
+
+#### الطريقة 2: استخدام gh-pages
+
+```bash
+# تثبيت gh-pages
+npm install -D gh-pages
+
+# إضافة script في package.json
+"scripts": {
+  "deploy": "gh-pages -d dist"
+}
+
+# بناء ونشر
+npm run build
+npm run deploy
+```
+
+ثم في GitHub:
+1. اذهب إلى **Settings** → **Pages**
+2. في قسم **Source**، اختر **Deploy from a branch**
+3. اختر فرع **gh-pages**
+4. احفظ
+
+### الخطوة 3: التحقق من النشر
+
+1. انتظر بضع دقائق
+2. افتح الرابط: `https://YOUR-USERNAME.github.io/educational-platform/`
+3. يجب أن ترى المنصة تعمل
+
+---
+
 ## 📁 هيكل المشروع
 
 ```
@@ -250,6 +314,9 @@ educational-platform/
 │   ├── App.tsx             # المكون الرئيسي
 │   ├── main.tsx            # نقطة الدخول
 │   └── index.css           # الأنماط العامة
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # GitHub Actions للنشر
 ├── .gitignore              # ملفات Git المستبعدة
 ├── index.html              # صفحة HTML الرئيسية
 ├── package.json            # تبعيات المشروع
@@ -270,13 +337,6 @@ educational-platform/
 4. Push للفرع (`git push origin feature/AmazingFeature`)
 5. افتح **Pull Request**
 
-### 📝 إرشادات المساهمة
-
-- اتبع نمط الكود الموجود
-- اكتب تعليقات واضحة
-- اختبر الكود قبل الإرسال
-- حدث التوثيق إذا لزم الأمر
-
 ---
 
 ## 📄 الرخصة
@@ -288,32 +348,7 @@ educational-platform/
 ## 📞 الدعم والتواصل
 
 - **البريد الإلكتروني**: 7hmed4ref@gmail.com
-- **GitHub Issues**: [افتح مشكلة جديدة](https://github.com/your-username/educational-platform/issues)
-
----
-
-## 🙏 الشكر والتقدير
-
-شكراً لجميع المساهمين في هذا المشروع!
-
----
-
-## 📸 لقطات شاشة
-
-### صفحة تسجيل الدخول
-<div align="center">
-  <img src="screenshots/login.png" alt="Login Page" width="600"/>
-</div>
-
-### لوحة تحكم الأدمن
-<div align="center">
-  <img src="screenshots/admin-dashboard.png" alt="Admin Dashboard" width="600"/>
-</div>
-
-### صفحة الحصص
-<div align="center">
-  <img src="screenshots/lessons.png" alt="Lessons Page" width="600"/>
-</div>
+- **GitHub Issues**: [افتح مشكلة جديدة](https://github.com/YOUR-USERNAME/educational-platform/issues)
 
 ---
 
@@ -321,6 +356,6 @@ educational-platform/
 
 **صنع بـ ❤️ للتعلم والتعليم**
 
-[⭐ ضع نجمة إذا أعجبك المشروع!](https://github.com/your-username/educational-platform)
+[⭐ ضع نجمة إذا أعجبك المشروع!](https://github.com/YOUR-USERNAME/educational-platform)
 
 </div>
