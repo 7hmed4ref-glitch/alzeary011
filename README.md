@@ -3,10 +3,10 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.0.0-blue)
-![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-3178C6?logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.11-38B2AC?logo=tailwind-css)
-![Vite](https://img.shields.io/badge/Vite-6.4.1-646CFF?logo=vite)
+![React](https://img.shields.io/badge/React-18.2.0-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7.0-3178C6?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1.7-38B2AC?logo=tailwind-css)
+![Vite](https://img.shields.io/badge/Vite-6.3.5-646CFF?logo=vite)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 **منصة تعليمية متكاملة مع نظام إدارة حصص، امتحانات، بث مباشر، وأكثر**
@@ -26,13 +26,12 @@
 - [الاستخدام](#-الاستخدام)
 - [النشر على GitHub Pages](#-النشر-على-github-pages)
 - [هيكل المشروع](#-هيكل-المشروع)
-- [المساهمة](#-المساهمة)
 
 ---
 
 ## 🌟 نظرة عامة
 
-منصة تعليمية متكاملة مصممة للطلاب والمعلمين، توفر نظام إدارة حصص دراسية، امتحانات، بث مباشر، وأكثر. تتميز بنظام أمان متقدم مع نظام موافقة من الإدارة وإمكانية إنشاء حسابات مباشرة.
+منصة تعليمية متكاملة مصممة للطلاب والمعلمين، توفر نظام إدارة حصص دراسية، امتحانات، بث مباشر، وأكثر.
 
 ### 🎯 الأهداف
 
@@ -58,28 +57,16 @@
 - ✅ مشاهدة فيديوهات تعليمية
 - ✅ تحميل ملفات PDF مرفقة
 - ✅ تتبع التقدم في الحصص
-- ✅ نظام قفل الحصص (لا يمكن فتح الحصة التالية إلا بعد إتمام الحالية)
+- ✅ نظام قفل الحصص
 
 #### 📝 الاختبارات والامتحانات
 - ✅ كويزات بعد كل حصة مع تصحيح تلقائي
 - ✅ امتحانات شاملة مع تقييم فوري
 - ✅ عرض النتائج والإجابات الصحيحة
-- ✅ نسبة نجاح 60% لاجتياز الاختبار
 
 #### 📺 البث المباشر
 - ✅ مشاهدة البث المباشر من الأدمن
 - ✅ تفاعل عبر الدردشة المباشرة
-- ✅ أزرار تحكم (كتم الصوت، إيقاف الفيديو)
-
-#### 💬 الأسئلة والاستفسارات
-- ✅ طرح الأسئلة للمعلمين
-- ✅ متابعة الردود على الأسئلة
-- ✅ فلترة الأسئلة (مجاب/غير مجاب)
-
-#### 🚨 الشكاوى والمشاكل
-- ✅ تقديم شكاوى ومشاكل
-- ✅ متابعة حالة الشكاوى
-- ✅ فلترة حسب الحالة
 
 ### 👨‍💼 للأدمن
 
@@ -88,50 +75,36 @@
 - ✅ قبول أو رفض طلبات التسجيل
 - ✅ إنشاء حسابات مباشرة بدون بريد/هاتف
 - ✅ توليد كود طالب وكلمة مرور تلقائياً
-- ✅ عرض تقدم الطلاب ودرجاتهم
-- ✅ البحث والفلترة
 
 #### 📚 إدارة الحصص
 - ✅ إنشاء حصص جديدة
 - ✅ رفع فيديوهات وملفات PDF
 - ✅ إنشاء كويزات مع تصحيح تلقائي
-- ✅ تعديل وحذف الحصص
 
 #### 📝 إدارة الامتحانات
 - ✅ إنشاء امتحانات جديدة
 - ✅ إضافة أسئلة متعددة الخيارات
 - ✅ تحديد الإجابات الصحيحة
-- ✅ تفعيل/تعطيل الامتحانات
 
 #### 📺 إدارة البث المباشر
 - ✅ بدء بث مباشر بالكاميرا والميكروفون
 - ✅ إنشاء جلسات بث
-- ✅ التحكم في البث (كتم/إيقاف)
-- ✅ إنهاء البث
-
-#### 📊 الإحصائيات
-- ✅ إجمالي الطلاب
-- ✅ الطلاب بانتظار الموافقة
-- ✅ الطلاب المعتمدون
-- ✅ المرفوضون
-- ✅ متوسط التقدم
 
 ---
 
 ## 🛠️ التقنيات المستخدمة
 
 ### Frontend
-- **React 18.3.1** - مكتبة JavaScript لبناء واجهات المستخدم
-- **TypeScript 5.7.2** - للكتابة الآمنة والقوية
-- **Vite 6.4.1** - أداة بناء سريعة
-- **Tailwind CSS 4.1.11** - إطار عمل CSS للتصميم
+- **React 18.2.0** - مكتبة JavaScript لبناء واجهات المستخدم
+- **TypeScript 5.7.0** - للكتابة الآمنة والقوية
+- **Vite 6.3.5** - أداة بناء سريعة
+- **Tailwind CSS 4.1.7** - إطار عمل CSS للتصميم
 - **Lucide React** - أيقونات حديثة وجميلة
 
 ### الخدمات
 - **LocalStorage** - قاعدة بيانات محلية
 - **WebRTC** - للبث المباشر
 - **BroadcastChannel API** - للتواصل بين التبويبات
-- **MediaStream API** - للوصول إلى الكاميرا والميكروفون
 
 ---
 
@@ -164,7 +137,7 @@ npm run preview
 ### الوصول للتطبيق
 
 بعد تشغيل `npm run dev`:
-- افتح المتصفح على: `http://localhost:5173`
+- افتح المتصفح على: `http://localhost:3000`
 
 ---
 
@@ -177,12 +150,6 @@ npm run preview
 البريد الإلكتروني: 7hmed4ref@gmail.com
 كلمة المرور: 011156
 ```
-
-#### تسجيل طالب جديد
-1. اضغط "سجل الآن"
-2. أدخل البيانات المطلوبة
-3. انتظر موافقة الأدمن
-4. سجل دخول بعد الموافقة
 
 ### 👨‍💼 استخدام لوحة الأدمن
 
@@ -214,13 +181,6 @@ npm run preview
 3. أدخل كلمة المرور
 4. اضغط "تسجيل الدخول"
 
-#### مشاهدة الحصص
-1. اذهب إلى "الحصص الدراسية"
-2. اختر حصة مفتوحة
-3. شاهد الفيديو بالكامل
-4. حل الكويز (60% على الأقل)
-5. سيتم فتح الحصة التالية
-
 ---
 
 ## 🌐 النشر على GitHub Pages
@@ -249,41 +209,23 @@ git push -u origin main
 
 ### الخطوة 2: تفعيل GitHub Pages
 
-#### الطريقة 1: استخدام GitHub Actions (موصى به)
-
 1. اذهب إلى **Settings** → **Pages**
 2. في قسم **Source**، اختر **GitHub Actions**
 3. سيتم استخدام workflow الموجود في `.github/workflows/deploy.yml`
 4. انتظر حتى اكتمال النشر
 5. الموقع سيكون متاحاً على: `https://YOUR-USERNAME.github.io/educational-platform/`
 
-#### الطريقة 2: استخدام gh-pages
+### ملاحظة مهمة
 
-```bash
-# تثبيت gh-pages
-npm install -D gh-pages
+إذا كان اسم مستودعك مختلفاً عن `educational-platform`، يجب تحديث `base` في `vite.config.js`:
 
-# إضافة script في package.json
-"scripts": {
-  "deploy": "gh-pages -d dist"
-}
-
-# بناء ونشر
-npm run build
-npm run deploy
+```javascript
+export default defineConfig({
+  // ...
+  base: '/اسم-المستودع-الخاص-بك/',
+  // ...
+});
 ```
-
-ثم في GitHub:
-1. اذهب إلى **Settings** → **Pages**
-2. في قسم **Source**، اختر **Deploy from a branch**
-3. اختر فرع **gh-pages**
-4. احفظ
-
-### الخطوة 3: التحقق من النشر
-
-1. انتظر بضع دقائق
-2. افتح الرابط: `https://YOUR-USERNAME.github.io/educational-platform/`
-3. يجب أن ترى المنصة تعمل
 
 ---
 
@@ -291,71 +233,57 @@ npm run deploy
 
 ```
 educational-platform/
-├── public/                 # الملفات العامة
 ├── src/
 │   ├── components/         # مكونات React
-│   │   ├── AdminDashboard.tsx    # لوحة تحكم الأدمن
-│   │   ├── Lessons.tsx           # صفحة الحصص
-│   │   ├── Exams.tsx             # صفحة الامتحانات
-│   │   ├── LiveStream.tsx        # صفحة البث المباشر
-│   │   ├── QA.tsx                # الأسئلة والاستفسارات
-│   │   ├── Complaints.tsx        # الشكاوى
-│   │   ├── Login.tsx             # تسجيل الدخول
-│   │   ├── Register.tsx          # التسجيل الجديد
-│   │   ├── ForgotPassword.tsx    # استعادة كلمة المرور
-│   │   ├── Sidebar.tsx           # القائمة الجانبية
-│   │   ├── SplashScreen.tsx      # شاشة البداية
-│   │   └── NotificationToast.tsx # الإشعارات
+│   │   ├── AdminDashboard.tsx
+│   │   ├── Lessons.tsx
+│   │   ├── Exams.tsx
+│   │   ├── LiveStream.tsx
+│   │   ├── QA.tsx
+│   │   ├── Complaints.tsx
+│   │   ├── Login.tsx
+│   │   ├── Register.tsx
+│   │   ├── ForgotPassword.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── SplashScreen.tsx
+│   │   └── NotificationToast.tsx
 │   ├── services/           # الخدمات
-│   │   ├── database.ts           # خدمة قاعدة البيانات
-│   │   ├── fileService.ts        # خدمة رفع الملفات
-│   │   └── notificationService.ts # خدمة الإشعارات
+│   │   ├── database.ts
+│   │   ├── fileService.ts
+│   │   └── notificationService.ts
 │   ├── types.ts            # تعريفات TypeScript
+│   ├── data.ts             # البيانات الافتراضية
 │   ├── App.tsx             # المكون الرئيسي
 │   ├── main.tsx            # نقطة الدخول
 │   └── index.css           # الأنماط العامة
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml      # GitHub Actions للنشر
-├── .gitignore              # ملفات Git المستبعدة
-├── index.html              # صفحة HTML الرئيسية
-├── package.json            # تبعيات المشروع
-├── tsconfig.json           # إعدادات TypeScript
-├── vite.config.js          # إعدادات Vite
-└── README.md               # هذا الملف
+├── .gitignore
+├── index.html
+├── package.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite.config.js
+└── README.md
 ```
-
----
-
-## 🤝 المساهمة
-
-نرحب بالمساهمات! يرجى اتباع الخطوات التالية:
-
-1. **Fork** المشروع
-2. أنشئ فرع جديد (`git checkout -b feature/AmazingFeature`)
-3. Commit التغييرات (`git commit -m 'Add some AmazingFeature'`)
-4. Push للفرع (`git push origin feature/AmazingFeature`)
-5. افتح **Pull Request**
 
 ---
 
 ## 📄 الرخصة
 
-هذا المشروع مرخص تحت رخصة MIT - راجع ملف [LICENSE](LICENSE) للتفاصيل.
+هذا المشروع مرخص تحت رخصة MIT.
 
 ---
 
 ## 📞 الدعم والتواصل
 
 - **البريد الإلكتروني**: 7hmed4ref@gmail.com
-- **GitHub Issues**: [افتح مشكلة جديدة](https://github.com/YOUR-USERNAME/educational-platform/issues)
 
 ---
 
 <div align="center">
 
 **صنع بـ ❤️ للتعلم والتعليم**
-
-[⭐ ضع نجمة إذا أعجبك المشروع!](https://github.com/YOUR-USERNAME/educational-platform)
 
 </div>

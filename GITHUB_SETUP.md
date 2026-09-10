@@ -19,10 +19,10 @@
 1. اذهب إلى [github.com](https://github.com)
 2. اضغط على زر "+" في الأعلى ثم "New repository"
 3. املأ البيانات:
-   - **Repository name**: `educational-platform` (أو أي اسم تريده)
+   - **Repository name**: `educational-platform`
    - **Description**: `منصة تعليمية متكاملة مع نظام إدارة حصص، امتحانات، بث مباشر`
    - **Public** أو **Private** (حسب تفضيلك)
-   - ✅ ضع علامة على "Add a README file" (اختياري - نحن لدينا README بالفعل)
+   - ❌ لا تضع علامة على "Add a README file" (لدينا واحد بالفعل)
    - ❌ لا تضع علامة على "Add .gitignore" (لدينا واحد بالفعل)
    - ❌ لا تضع علامة على "Choose a license" (لدينا واحد بالفعل)
 4. اضغط "Create repository"
@@ -64,56 +64,6 @@ git push -u origin main
 
 ---
 
-## 🔄 الخطوات البديلة (إذا كان المستودع موجوداً بالفعل)
-
-إذا قمت بإنشاء المستودع على GitHub مع README:
-
-```bash
-# استنساخ المستودع
-git clone https://github.com/YOUR-USERNAME/educational-platform.git
-cd educational-platform
-
-# نسخ ملفات مشروعك إلى المجلد
-# (انسخ جميع الملفات ما عدا README.md و .git)
-
-# إضافة الملفات
-git add .
-
-# commit
-git commit -m "Initial commit: منصة تعليمية متكاملة"
-
-# رفع
-git push origin main
-```
-
----
-
-## 📝 رسائل Commit الموصى بها
-
-استخدم صيغة Conventional Commits:
-
-```bash
-# الميزات الجديدة
-git commit -m "feat: إضافة ميزة البث المباشر"
-
-# إصلاح الأخطاء
-git commit -m "fix: إصلاح مشكلة تسجيل الدخول"
-
-# التوثيق
-git commit -m "docs: تحديث README"
-
-# التحسينات
-git commit -m "refactor: إعادة هيكلة الكود"
-
-# الاختبارات
-git commit -m "test: إضافة اختبارات جديدة"
-
-# الإعدادات
-git commit -m "chore: تحديث إعدادات المشروع"
-```
-
----
-
 ## 🌐 تفعيل GitHub Pages
 
 ### الطريقة 1: استخدام GitHub Actions (موصى به)
@@ -125,68 +75,24 @@ git commit -m "chore: تحديث إعدادات المشروع"
 5. انتظر حتى اكتمال النشر
 6. الموقع سيكون متاحاً على: `https://YOUR-USERNAME.github.io/educational-platform/`
 
-### الطريقة 2: استخدام gh-pages
+### ملاحظة مهمة
 
-```bash
-# تثبيت gh-pages
-npm install -D gh-pages
+إذا كان اسم مستودعك مختلفاً عن `educational-platform`، يجب تحديث `base` في `vite.config.js`:
 
-# إضافة script في package.json
-"scripts": {
-  "deploy": "gh-pages -d dist"
-}
-
-# بناء ونشر
-npm run build
-npm run deploy
+```javascript
+export default defineConfig({
+  // ...
+  base: '/اسم-المستودع-الخاص-بك/',
+  // ...
+});
 ```
 
-ثم في GitHub:
-1. اذهب إلى **Settings** → **Pages**
-2. في قسم **Source**، اختر **Deploy from a branch**
-3. اختر فرع **gh-pages**
-4. احفظ
+ثم قم بـ commit و push التغييرات:
 
----
-
-## 🔧 إعدادات إضافية
-
-### إضافة Collaborators
-
-1. اذهب إلى **Settings** → **Collaborators**
-2. اضغط "Add people"
-3. ابحث عن المستخدم وأضفه
-
-### حماية الفرع الرئيسي
-
-1. اذهب إلى **Settings** → **Branches**
-2. اضغط "Add branch protection rule"
-3. Branch name pattern: `main`
-4. ✅ Require pull request reviews before merging
-5. ✅ Require status checks to pass before merging
-6. احفظ
-
-### إضافة Labels
-
-1. اذهب إلى **Issues** → **Labels**
-2. أضف labels مثل:
-   - `bug` - للأخطاء
-   - `enhancement` - للتحسينات
-   - `documentation` - للتوثيق
-   - `good first issue` - للمبتدئين
-   - `help wanted` - للمساعدة
-
----
-
-## 📊 إحصائيات المشروع
-
-### إضافة Badge في README
-
-```markdown
-![GitHub stars](https://img.shields.io/github/stars/YOUR-USERNAME/educational-platform?style=social)
-![GitHub forks](https://img.shields.io/github/forks/YOUR-USERNAME/educational-platform?style=social)
-![GitHub issues](https://img.shields.io/github/issues/YOUR-USERNAME/educational-platform)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR-USERNAME/educational-platform)
+```bash
+git add vite.config.js
+git commit -m "chore: تحديث base path لـ GitHub Pages"
+git push
 ```
 
 ---
@@ -213,40 +119,33 @@ git pull origin main --rebase
 git push origin main
 ```
 
-### المشكلة: "Permission denied (publickey)"
-
-```bash
-# تحقق من SSH key
-ssh -T git@github.com
-
-# إذا لم يكن هناك SSH key، أنشئ واحد
-ssh-keygen -t ed25519 -C "your_email@example.com"
-
-# أضف المفتاح إلى GitHub
-cat ~/.ssh/id_ed25519.pub
-# انسخ المفتاح وأضفه في GitHub → Settings → SSH and GPG keys
-```
-
 ### المشكلة: الموقع لا يظهر على GitHub Pages
 
-```bash
-# تأكد من أن الملفات موجودة في مجلد dist
-npm run build
+1. تأكد من أن GitHub Actions يعمل:
+   - اذهب إلى **Actions** tab
+   - تحقق من أن workflow اكتمل بنجاح
 
-# تحقق من إعدادات GitHub Pages
-# Settings → Pages → Source
+2. تحقق من إعدادات GitHub Pages:
+   - **Settings** → **Pages**
+   - تأكد من أن Source هو **GitHub Actions**
 
-# إذا كنت تستخدم GitHub Actions، تحقق من:
-# Actions tab → Deploy to GitHub Pages workflow
-```
+3. انتظر بضع دقائق بعد النشر
 
-### المشكلة: "File index.html not found"
+### المشكلة: "File not found" أو صفحة بيضاء
 
-تأكد من أن:
-1. ملف `index.html` موجود في الجذر
-2. ملف `src/main.tsx` موجود (وليس `main.jsx`)
-3. ملف `vite.config.js` موجود
-4. قمت بتشغيل `npm run build` قبل الرفع
+1. تأكد من أن `base` في `vite.config.js` صحيح:
+   ```javascript
+   base: '/educational-platform/', // يجب أن يطابق اسم المستودع
+   ```
+
+2. قم بـ commit و push التغييرات:
+   ```bash
+   git add vite.config.js
+   git commit -m "fix: تحديث base path"
+   git push
+   ```
+
+3. انتظر حتى يكتمل النشر
 
 ---
 
@@ -261,9 +160,8 @@ npm run build
 - [ ] لا توجد ملفات حساسة (كلمات مرور، مفاتيح API)
 - [ ] المشروع يعمل محلياً (`npm run dev`)
 - [ ] المشروع يبني بنجاح (`npm run build`)
-- [ ] جميع الاختبارات ناجحة
-- [ ] التوثيق محدث
-- [ ] ملف `index.html` يشير إلى `src/main.tsx` (وليس `main.jsx`)
+- [ ] `vite.config.js` يحتوي على `base` صحيح
+- [ ] `.github/workflows/deploy.yml` موجود
 
 ---
 
@@ -276,15 +174,6 @@ npm run build
 3. ✅ اطلب من الأصدقاء مراجعة المشروع
 4. ✅ ابدأ في جمع الملاحظات
 5. ✅ استمر في التطوير والتحسين
-
----
-
-## 📚 موارد إضافية
-
-- [GitHub Docs](https://docs.github.com/)
-- [Git Handbook](https://guides.github.com/introduction/git-handbook/)
-- [GitHub Learning Lab](https://lab.github.com/)
-- [Conventional Commits](https://www.conventionalcommits.org/)
 
 ---
 
