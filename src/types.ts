@@ -73,13 +73,14 @@ export type Page = 'lessons' | 'lesson-player' | 'exams' | 'qa' | 'live' | 'comp
 export interface User {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   role: 'student' | 'admin';
   avatar?: string;
   phone?: string;
   joinDate: string;
   status?: 'pending' | 'approved' | 'rejected';
   password?: string;
+  studentCode?: string;
 }
 
 export interface AdminStats {

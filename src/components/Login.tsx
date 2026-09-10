@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User } from '../types';
 import { db } from '../services/database';
 import { notificationService } from '../services/notificationService';
-import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, GraduationCap, Shield, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, UserPlus, GraduationCap, Shield, Clock, CheckCircle, AlertCircle, KeyRound } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -16,7 +16,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onForgotPass
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<{show: boolean, name: string, email: string, joinDate: string} | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<{show: boolean, name: string, email?: string, joinDate: string} | null>(null);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'code'>('email');
+  const [studentCode, setStudentCode] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +26,30 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onForgotPass
     setIsLoading(true);
 
     setTimeout(() => {
+      // Login by student code
+      if (loginMethod === 'code') {
+        const user = db.authenticateByCode(studentCode, password);
+        
+        if (user) {
+          notificationService.success('تم تسجيل الدخول بنجاح', `مرحباً ${user.name}`);
+          onLogin({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            joinDate: user.joinDate,
+            phone: user.phone,
+            status: user.status,
+          });
+        } else {
+          setError('كود الطالب أو كلمة المرور غير صحيحة');
+          notificationService.error('فشل تسجيل الدخول', 'تحقق من بياناتك وحاول مرة أخرى');
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Login by email
       // First check if user exists
       const existingUser = db.findUserByEmail(email);
       
@@ -184,7 +210,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onForgotPass
                 <button
                   onClick={() => {
                     setPendingMessage(null);
-                    setEmail(pendingMessage.email);
+                    setEmail(pendingMessage.email || '');
                     setPassword('');
                   }}
                   className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
@@ -223,24 +249,70 @@ const Login: React.FC<LoginProps> = ({ onLogin, onSwitchToRegister, onForgotPass
 
         {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Login Method Tabs */}
+          <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setLoginMethod('email')}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition ${
+                loginMethod === 'email'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              بالبريد الإلكتروني
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('code')}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition ${
+                loginMethod === 'code'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              بكود الطالب
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                البريد الإلكتروني
-              </label>
-              <div className="relative">
-                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="example@email.com"
-                  required
-                />
+            {/* Email or Student Code Field */}
+            {loginMethod === 'email' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  البريد الإلكتروني
+                </label>
+                <div className="relative">
+                  <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="example@email.com"
+                    required
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  كود الطالب
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={studentCode}
+                    onChange={(e) => setStudentCode(e.target.value.toUpperCase())}
+                    className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono text-lg tracking-wider"
+                    placeholder="STU-XXXXXX"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">الكود الذي أعطاه لك الأدمن</p>
+              </div>
+            )}
 
             {/* Password Field */}
             <div>

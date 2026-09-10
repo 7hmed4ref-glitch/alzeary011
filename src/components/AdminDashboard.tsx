@@ -128,7 +128,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
   const [createdStudentCredentials, setCreatedStudentCredentials] = useState<{
     name: string;
-    email: string;
+    email?: string;
     password: string;
     studentCode: string;
   } | null>(null);
@@ -751,21 +751,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
+    const email = formData.get('email') as string | null;
+    const phone = formData.get('phone') as string | null;
 
-    // Validate Egyptian phone
-    const egyptianPhoneRegex = /^01[0-9]{9}$/;
-    if (!egyptianPhoneRegex.test(phone)) {
-      notificationService.error('رقم هاتف غير صحيح', 'يجب أن يكون رقم مصري صحيح (01XXXXXXXXX)');
-      return;
+    // Validate Egyptian phone if provided
+    if (phone) {
+      const egyptianPhoneRegex = /^01[0-9]{9}$/;
+      if (!egyptianPhoneRegex.test(phone)) {
+        notificationService.error('رقم هاتف غير صحيح', 'يجب أن يكون رقم مصري صحيح (01XXXXXXXXX)');
+        return;
+      }
     }
 
-    // Check if email exists
-    const existingUser = db.findUserByEmail(email);
-    if (existingUser) {
-      notificationService.error('البريد الإلكتروني موجود', 'هذا البريد مسجل مسبقاً');
-      return;
+    // Check if email exists (only if provided)
+    if (email) {
+      const existingUser = db.findUserByEmail(email);
+      if (existingUser) {
+        notificationService.error('البريد الإلكتروني موجود', 'هذا البريد مسجل مسبقاً');
+        return;
+      }
     }
 
     // Generate credentials
@@ -775,17 +779,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
     // Create user
     db.addUser({
       name,
-      email,
-      phone,
+      email: email || undefined,
+      phone: phone || undefined,
       password,
       role: 'student',
       status: 'approved',
+      studentCode,
     });
 
     // Show credentials
     setCreatedStudentCredentials({
       name,
-      email,
+      email: email || undefined,
       password,
       studentCode,
     });
@@ -1756,28 +1761,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">البريد الإلكتروني *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">البريد الإلكتروني (اختياري)</label>
                   <input
                     type="email"
                     name="email"
-                    required
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="example@email.com"
                   />
+                  <p className="text-xs text-gray-500 mt-1">يمكن تركه فارغاً - الطالب سيسجل الدخول بكود الطالب</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف المصري *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">رقم الهاتف المصري (اختياري)</label>
                   <input
                     type="tel"
                     name="phone"
-                    required
                     pattern="01[0-9]{9}"
                     maxLength={11}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="01XXXXXXXXX"
                   />
-                  <p className="text-xs text-gray-500 mt-1">مثال: 01012345678</p>
+                  <p className="text-xs text-gray-500 mt-1">يمكن تركه فارغاً</p>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -1824,21 +1828,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onLogout }) => {
                     <p className="font-medium text-gray-800">{createdStudentCredentials.name}</p>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">البريد الإلكتروني</p>
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-gray-800">{createdStudentCredentials.email}</p>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(createdStudentCredentials.email);
-                          notificationService.success('تم النسخ', 'تم نسخ البريد الإلكتروني');
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        نسخ
-                      </button>
+                  {createdStudentCredentials.email && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">البريد الإلكتروني</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-gray-800">{createdStudentCredentials.email}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(createdStudentCredentials.email || '');
+                            notificationService.success('تم النسخ', 'تم نسخ البريد الإلكتروني');
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          نسخ
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-xs text-blue-600 mb-1">كود الطالب</p>

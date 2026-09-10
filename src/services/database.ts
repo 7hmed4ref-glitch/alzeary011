@@ -4,13 +4,14 @@
 export interface User {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   password: string; // In production, this should be hashed
   role: 'admin' | 'student';
   phone?: string;
   joinDate: string;
   avatar?: string;
   status?: 'pending' | 'approved' | 'rejected';
+  studentCode?: string;
 }
 
 export interface Lesson {
@@ -118,6 +119,21 @@ class Database {
     users.push(newUser);
     this.saveUsers(users);
     return newUser;
+  }
+
+  findUserByStudentCode(studentCode: string): User | undefined {
+    return this.getUsers().find(u => u.studentCode === studentCode);
+  }
+
+  authenticateByCode(studentCode: string, password: string): User | null {
+    const user = this.findUserByStudentCode(studentCode);
+    if (user && user.password === password) {
+      if (user.role === 'student' && user.status !== 'approved') {
+        return null;
+      }
+      return user;
+    }
+    return null;
   }
 
   findUserByEmail(email: string): User | undefined {
